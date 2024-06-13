@@ -32,6 +32,8 @@ urlpatterns = [
 
     path('login',views.login,name="login"),
 
-path('signup/', views.new_account_holder, name='signup'),
+    path('signup/', views.new_account_holder, name='signup'),
+
+    path('rou/', views.rou, name="rou"),
 
 ]

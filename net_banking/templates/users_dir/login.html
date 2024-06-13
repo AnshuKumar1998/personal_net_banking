@@ -41,11 +41,11 @@
 						{% endfor %}
 					</div>
 				{% endif %}
-				<form name="contactform" id="contactform" method="post" action="" onsubmit="return(validate());" novalidate="novalidate">
+				<form name="login" id="login" method="post" action="" onsubmit="return(validate());" novalidate="novalidate">
 					{% csrf_token %}
 						<div class="form-group">
-						  <label>Email</label>
-						  <input type="email" class="form-control" placeholder="Enter Email" name="email">
+						  <label>Username</label>
+						  <input type="text" class="form-control" placeholder="Enter Username" name="username">
 						</div>
                         <div class="form-group">
 						  <label>Password</label>
@@ -84,30 +84,6 @@
 		</div>
 	</div>
 </section>
- <div class="modal fade" id="successModal" tabindex="-1" role="dialog" aria-labelledby="successModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="successModalLabel">Success</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    Your message has been successfully sent!
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Include jQuery and Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
-
     <!-- Show modal if there are messages -->
     {% if messages %}
         <script>
