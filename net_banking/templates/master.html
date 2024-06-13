@@ -29,6 +29,10 @@ Smartphone Compatible web template, free webdesigns for Nokia, Samsung, LG, Sony
     <link href="/static/css/bootstrap.css" rel='stylesheet' type='text/css' /><!-- bootstrap css -->
     <link href="/static/css/style.css" rel='stylesheet' type='text/css' /><!-- custom css -->
     <link href="/static/css/font-awesome.min.css" rel="stylesheet"><!-- fontawesome css -->
+	<link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
 	<!-- //css files -->
 
 	<!-- google fonts -->
@@ -49,12 +53,20 @@ Smartphone Compatible web template, free webdesigns for Nokia, Samsung, LG, Sony
 			<label for="drop" class="toggle"><span class="fa fa-bars"></span></label>
 			<input type="checkbox" id="drop" />
 			<ul class="menu ml-auto mt-1">
+
 				<li class=""><a href="{% url 'index' %}">Home</a></li>
 				<li class=""><a href="about.html">About</a></li>
 				<li class=""><a href="services.html">Services</a></li>
 				<li class=""><a href="blog.html">Blog</a></li>
 				<li class=""><a href="/contact_us">Contact</a></li>
+
+				{% if user.is_authenticated %}
+				<li><a href="{% url 'user_account' %}"><i class=""></i>Account</a></li>
+				<li class="last-grid"><a href="{% url 'logout' %}">Log Out<!-- //breadcrumb --></a></li>
+				{% else %}
 				<li class="last-grid"><a href="/login">LOG IN<!-- //breadcrumb --></a></li>
+				{% endif %}
+
 			</ul>
 		</nav>
 		<!-- //nav -->

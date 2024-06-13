@@ -34,6 +34,12 @@ urlpatterns = [
 
     path('signup/', views.new_account_holder, name='signup'),
 
-    path('rou/', views.rou, name="rou"),
+    path('blog/', views.blog, name="blog"),
+
+    path('user_account/',views.user_account,name="user_account"),
+
+    path('logout/', views.logout, name='logout'),
+
+    path('activate/',views.activate,name='activate'),
 
 ]
