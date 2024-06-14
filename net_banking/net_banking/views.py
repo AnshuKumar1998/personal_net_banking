@@ -1,17 +1,19 @@
 import random
 from datetime import datetime
+
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from app.models import Contact_us,Account_holders,Account_Details
+from app.models import Contact_us,Account_holders,Account_Details,User_Inbox
 from app.forms import UserForm
 from django.utils import timezone
-
+from django.views.decorators.csrf import csrf_exempt
 
 
 def master(request):
@@ -48,6 +50,7 @@ def login(request):
             auth_login(request, user)
             try:
                 profile = Account_holders.objects.get(user=user)
+                user_messages = User_Inbox.objects.filter(username=profile.username)
                 try:
                     account_data = Account_Details.objects.get(username=username)
                 except Account_Details.DoesNotExist:
@@ -69,6 +72,7 @@ def login(request):
                     'pan_no': account_data.pan_no if account_data else None,
                     'aadhar_no': account_data.aadhar_no if account_data else None,
                     'last_login': account_data.last_login if account_data else None,
+                    'messages': user_messages  # Ensure messages are included in the context
                 }
             except Account_holders.DoesNotExist:
                 profile_data = {}
@@ -87,7 +91,6 @@ def login(request):
 
     return render(request, 'users_dir/login.html')
 
-
 @login_required
 def user_account(request):
     try:
@@ -96,6 +99,8 @@ def user_account(request):
             account_data = Account_Details.objects.get(username=profile.username)
         except Account_Details.DoesNotExist:
             account_data = None
+
+        user_messages = User_Inbox.objects.filter(username=profile.username)
 
         profile_data = {
             'name': profile.name,
@@ -113,6 +118,7 @@ def user_account(request):
             'pan_no': account_data.pan_no if account_data else None,
             'aadhar_no': account_data.aadhar_no if account_data else None,
             'last_login': account_data.last_login if account_data else None,
+            'messages': user_messages,
         }
     except Account_holders.DoesNotExist:
         profile_data = {}
@@ -123,7 +129,6 @@ def user_account(request):
     }
 
     return render(request, 'users_dir/user_account.html', context)
-
 def logout(request):
     auth_logout(request)
     response = redirect('login')  # Redirect to the login page or any other page after logout
@@ -154,6 +159,16 @@ def new_account_holder(request):
             user.save()
             profile = Account_holders.objects.create(user=user, username=username, name=name,email=email, gender=gender, mobile=mobile, dob=dob, password=password, address=address)
             profile.save()
+            User_Inbox.objects.create(
+                user=profile,
+                username=username,
+                name=name,
+                email=email,
+                mobile=mobile,
+                subject="Welcome to Our Service",
+                content="Thank you for creating an account with us.",
+                date=timezone.now().date()
+            )
             messages.success(request, 'Your Account Has Been Created successfully!')
         return redirect('signup')
 
@@ -206,6 +221,17 @@ def activate(request):
         )
         account_holder.account_status = 'Active'  # Example: Updating account_status column
         account_holder.save()
+        User_Inbox.objects.create(
+            user=account_holder,
+            username=account_holder.username,
+            name=account_holder.name,
+            email=account_holder.email,
+            mobile=account_holder.mobile,
+            subject="Account Activation",
+            content="Your account has been successfully activated.",
+            date=timezone.now().date()
+        )
+
         messages.success(request, 'Account Successfully Activated')#
         return redirect('user_account')
 
@@ -235,6 +261,28 @@ def update_profile(request):
         account_holder.address = address
         account_holder.dob = dob
         account_holder.save()
+        User_Inbox.objects.create(
+            user=account_holder,
+            username=account_holder.username,
+            name=account_holder.name,
+            email=account_holder.email,
+            mobile=account_holder.mobile,
+            subject="Profile Update",
+            content="Your profile has been successfully Updated.",
+            date=timezone.now().date()
+        )
         messages.success(request, 'Profile Successfully Updated')  #
         return redirect('user_account')
     return render(request, 'users_dir/user_account.html')
+
+
+@csrf_exempt
+def delete_message(request, message_id):
+    if request.method == 'DELETE':
+        try:
+            message = User_Inbox.objects.get(id=message_id)
+            message.delete()
+            return JsonResponse({'success': True})
+        except User_Inbox.DoesNotExist:
+            return JsonResponse({'error': 'Message not found'}, status=404)
+    return JsonResponse({'error': 'Invalid request'}, status=400)

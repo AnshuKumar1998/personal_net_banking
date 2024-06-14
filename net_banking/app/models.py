@@ -4,6 +4,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 
+
 # Create your models here.
 
 class Contact_us(models.Model):
@@ -56,3 +57,15 @@ def update_account_status_on_delete(sender, instance, **kwargs):
     account_holder.save()
 
 
+class User_Inbox(models.Model):
+    user = models.ForeignKey(Account_holders, on_delete=models.CASCADE, related_name='user_inboxes')
+    username = models.CharField(max_length=100)
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    mobile = models.CharField(max_length=15)
+    subject = models.CharField(max_length=50)
+    content = models.CharField(max_length=200)
+    date = models.DateField()
+
+    def __str__(self):
+        return self.email

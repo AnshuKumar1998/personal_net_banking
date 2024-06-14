@@ -82,44 +82,74 @@
             </div>
 
             <!-- Inbox Tabs -->
-            <ul class="nav nav-tabs" id="myTab" role="tablist">
-                <li class="nav-item">
-                    <a class="nav-link active" id="online-tab" data-toggle="tab" href="#online" role="tab" aria-controls="online" aria-selected="true">Online</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" id="inbox-tab" data-toggle="tab" href="#inbox" role="tab" aria-controls="inbox" aria-selected="false">Inbox</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" id="chat-tab" data-toggle="tab" href="#chat" role="tab" aria-controls="chat" aria-selected="false"><span class="fa fa-comment"></span></a>
-                </li>
-            </ul>
-            <div class="tab-content" id="myTabContent">
-                <div class="tab-pane fade show active" id="online" role="tabpanel" aria-labelledby="online-tab">
-                    <div class="user-card mt-3">
-                        <div class="user-info">
-                            <h6>Anshu Kumar</h6>
-                        </div>
-                    </div>
-                </div>
-                <div class="tab-pane fade" id="inbox" role="tabpanel" aria-labelledby="inbox-tab">
-                    <div class="user-card mt-3">
-                        <div class="user-info">
-                            <i>This is a message for you</i><br>
-                            <i>12 Jan 2023</i><br>
-                        </div>
-                    </div>
-                </div>
-                <div class="tab-pane fade" id="chat" role="tabpanel" aria-labelledby="chat-tab">
-                    <div class="user-card mt-3">
-                        <img src="/static/images/sejal.jpg" alt="User Image" class="img-fluid">
-                        <div class="user-info">
-                            <h6>Jane Smith</h6>
-                            <p>Chat</p>
-                        </div>
-                    </div>
+<ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="online-tab" data-toggle="tab" href="#online" role="tab" aria-controls="online" aria-selected="true">Online</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="inbox-tab" data-toggle="tab" href="#inbox" role="tab" aria-controls="inbox" aria-selected="false">Inbox</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="chat-tab" data-toggle="tab" href="#chat" role="tab" aria-controls="chat" aria-selected="false"><span class="fa fa-comment"></span></a>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade show active" id="online" role="tabpanel" aria-labelledby="online-tab">
+            <div class="user-card mt-3">
+                <div class="user-info">
+                    <h6>Anshu Kumar</h6>
                 </div>
             </div>
         </div>
+        <div class="tab-pane fade" id="inbox" role="tabpanel" aria-labelledby="inbox-tab">
+            <div class="scrollable mt-3">
+                {% for message in profile_data.messages %}
+                    <div class="message" data-id="{{ message.id }}" data-subject="{{ message.subject }}" data-content="{{ message.content }}" data-date="{{ message.date }}">
+                        <span class="delete-btn">&times;</span>
+                        <h6>{{ message.subject }}</h6>
+                        <i>{{ message.date }}</i><br>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="tab-pane fade" id="chat" role="tabpanel" aria-labelledby="chat-tab">
+            <div class="user-card mt-3">
+                <img src="/static/images/sejal.jpg" alt="User Image" class="img-fluid">
+                <div class="user-info">
+                    <h6>Jane Smith</h6>
+                    <p>Chat</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for displaying message details -->
+    <div class="modal fade" id="messageModal" tabindex="-1" role="dialog" aria-labelledby="messageModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="messageModalLabel">Message Details</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h6 id="modalSubject"></h6>
+                    <p id="modalContent"></p>
+                    <i id="modalDate"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+        </div>
+
+        <!-- end Inbox Tabs -->
+
+
 
         <!-- Right Column -->
         <div class="col-md-9">
@@ -346,6 +376,62 @@
             {% endif %}
         });
     </script>
+<!-- Add this script at the bottom of your template -->
+
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Attach click event to each message for viewing details
+        document.querySelectorAll('.message').forEach(function(message) {
+            message.addEventListener('click', function(event) {
+                if (event.target.classList.contains('delete-btn')) {
+                    return; // Ignore the click if it's on the delete button
+                }
+                const subject = this.getAttribute('data-subject');
+                const content = this.getAttribute('data-content');
+                const date = this.getAttribute('data-date');
+
+                // Populate modal with message details
+                document.getElementById('modalSubject').innerText = subject;
+                document.getElementById('modalContent').innerText = content;
+                document.getElementById('modalDate').innerText = date;
+
+                // Show the modal
+                $('#messageModal').modal('show');
+            });
+        });
+
+        // Attach click event to each delete button
+        document.querySelectorAll('.delete-btn').forEach(function(button) {
+            button.addEventListener('click', function(event) {
+                const messageDiv = this.closest('.message');
+                const messageId = messageDiv.getAttribute('data-id');
+
+                // Send delete request to the server
+                fetch(`/delete_message/${messageId}/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}', // Include CSRF token for security
+                    },
+                })
+                .then(response => {
+                    if (response.ok) {
+                        messageDiv.remove(); // Remove message div from the DOM
+                    } else {
+                        alert('Failed to delete message');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting message:', error);
+                    alert('Failed to delete message');
+                });
+            });
+        });
+    });
+    </script>
+
 
 
 
@@ -423,5 +509,28 @@
     .user-info {
         margin-left: 10px;
     }
+     .message {
+            position: relative;
+            cursor: pointer;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .message:hover {
+            background-color: #f0f0f0;
+        }
+
+        .scrollable {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: red;
+            cursor: pointer;
+        }
 </style>
 {% endblock %}
