@@ -155,7 +155,12 @@
         <div class="col-md-9">
             <!-- Profit Chart -->
             <div class="profit-chart">
-                <img src="/static/images/blog_2.JPG" alt="Profit Chart" class="img-fluid">
+
+                 <h2 class="text-center text-white mb-4">Profit Chart</h2>
+                <div class="chart-container bg-dark p-4 rounded">
+                    <canvas id="profitChart" width="400" height="200"></canvas>
+                </div>
+
             </div>
 
             <!-- Profile Form and Tabs -->
@@ -431,6 +436,88 @@
         });
     });
     </script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        fetch('/api/profit-data/')
+            .then(response => response.json())
+            .then(data => {
+                const months = data.map(item => item.month);
+                const profits = data.map(item => item.profit);
+
+                const ctx = document.getElementById('profitChart').getContext('2d');
+                const profitChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: 'Profit',
+                            data: profits,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)', // Line fill color
+                            borderWidth: 2,
+                            fill: true, // Fill the area under the line
+                            pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgba(75, 192, 192, 1)'
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₹ ' + value;
+                                    },
+                                    color: '#ecf0f1'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#ecf0f1'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#ecf0f1'
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        label += '₹ ' + context.parsed.y;
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        elements: {
+                            point: {
+                                radius: 5,
+                                hoverRadius: 7
+                            }
+                        }
+                    }
+                });
+            });
+    });
+</script>
 
 
 

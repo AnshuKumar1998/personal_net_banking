@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from app.models import Contact_us,Account_holders,Account_Details,User_Inbox
+from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit
 from app.forms import UserForm
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -286,3 +286,13 @@ def delete_message(request, message_id):
         except User_Inbox.DoesNotExist:
             return JsonResponse({'error': 'Message not found'}, status=404)
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+
+def get_profit_data(request):
+    data = MonthlyProfit.objects.all().values('month', 'profit')
+    return JsonResponse(list(data), safe=False)
+
+
+def chart_view(request):
+    return render(request, 'users_dir/blog.html')

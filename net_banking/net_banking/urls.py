@@ -46,5 +46,9 @@ urlpatterns = [
     path('update_profile/',views.update_profile,name='update_profile'),
 
     path('delete_message/<int:message_id>/', views.delete_message, name='delete_message'),
+
+    path('api/profit-data/', views.get_profit_data, name='get_profit_data'),
+
+path('chart/', views.chart_view, name='chart_view'),
 ]
 

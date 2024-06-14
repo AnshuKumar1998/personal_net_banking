@@ -19,7 +19,7 @@
 				<a href="{% url 'index' %}">Home</a>
 			</li>
 			<li class="breadcrumb-item" aria-current="page">Log In</li>
-            <li class="breadcrumb-item" aria-current="page">Account</li>
+            <li class="breadcrumb-item" aria-current="page">Hi, {{ profile_data.name }}</li>
 		</ol>
 	</nav>
 	</div>
@@ -34,26 +34,40 @@
                 <img src="/static/images/sejal.jpg" alt="Profile Image" class="img-fluid rounded-circle mb-3">
                 <h4>Profile</h4>
                 <ul>
-                    <li><strong>Username : </strong> None</li>
-                    <li><strong>Name : </strong> None</li>
-                    <li><strong>Gender : </strong> None</li>
-                    <li><strong>Date of Birth : </strong> N/A</li>
-                    <li><strong>Mobile No. </strong> N/A</li>
-                    <li><strong>Email : </strong> N/A</li>
+                    <li><strong>Username : </strong> {{ profile_data.username }}</li>
+                    <li><strong>Name : </strong> {{ profile_data.name }}</li>
+                    <li><strong>Gender : </strong> {{ profile_data.gender }}</li>
+                    <li><strong>Date of Birth : </strong> {{ profile_data.dob }}</li>
+                    <li><strong>Mobile No. </strong> {{ profile_data.mobile }}</li>
+                    <li><strong>Email : </strong> {{ profile_data.email }}</li>
 
                 </ul>
             </div>
+
 
             <!-- Tags Widget -->
             <div class="tags-widget mt-4">
                 <h4>Account Details</h4>
+                 {% if profile_data.user_status == 'Blocked' %}
                 <ul>
-                     <li><strong>Account No. </strong> N/A</li>
-                    <li><strong>Your UPI ID : </strong> N/A</li>
-                    <li><strong>Current Amount :  </strong> N/A</li>
-                    <li><strong>Last Login :  </strong> N/A</li>
+                <li><a href="">Your Account Are<strong> Blocked</strong></a></li>
                 </ul>
             </div>
+                {% elif profile_data.user_account == 'Active' %}
+                  <li><strong>Account No. </strong> {{ profile_data.account_no }}</li>
+                    <li><strong>Your UPI ID : </strong> {{ profile_data.upi_no }}</li>
+                    <li><strong>Current Amount :  </strong> {{ profile_data.current_amt }}</li>
+                    <li><strong>Last Login :  </strong> {{ profile_data.last_login }}</li>
+                    <li><strong>Pan No :  </strong> {{ profile_data.pan_no|slice:":5" }}XXXX</li>
+                    <li><strong>Aadhar No :  </strong> {{ profile_data.aadhar_no|slice:":3" }}XXX</li>
+
+            </div>
+
+                {% else %}
+                <li><a  data-toggle="modal" data-target="#exampleModal" data-whatever="@mdo" href="">Click here For <strong>Activate Account</strong></a></li>
+
+            </div>
+                 {% endif %}
 
             <!-- Archives -->
             <div class="tags-widget mt-4">
@@ -63,54 +77,90 @@
                     <li><a href="#">Fix Deposite</a></li>
                     <li><a href="#">Annocuments</a></li>
                     <li><a href="#">Complaint</a></li>
+                    <li><a href="#">Settings</a></li>
                 </ul>
             </div>
 
             <!-- Inbox Tabs -->
-            <ul class="nav nav-tabs" id="myTab" role="tablist">
-                <li class="nav-item">
-                    <a class="nav-link active" id="online-tab" data-toggle="tab" href="#online" role="tab" aria-controls="online" aria-selected="true">Online</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" id="inbox-tab" data-toggle="tab" href="#inbox" role="tab" aria-controls="inbox" aria-selected="false">Inbox</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" id="chat-tab" data-toggle="tab" href="#chat" role="tab" aria-controls="chat" aria-selected="false"><span class="fa fa-comment"></span></a>
-                </li>
-            </ul>
-            <div class="tab-content" id="myTabContent">
-                <div class="tab-pane fade show active" id="online" role="tabpanel" aria-labelledby="online-tab">
-                    <div class="user-card mt-3">
-                        <div class="user-info">
-                            <h6>Anshu Kumar</h6>
-                        </div>
-                    </div>
-                </div>
-                <div class="tab-pane fade" id="inbox" role="tabpanel" aria-labelledby="inbox-tab">
-                    <div class="user-card mt-3">
-                        <div class="user-info">
-                            <i>This is a message for you</i><br>
-                            <i>12 Jan 2023</i><br>
-                        </div>
-                    </div>
-                </div>
-                <div class="tab-pane fade" id="chat" role="tabpanel" aria-labelledby="chat-tab">
-                    <div class="user-card mt-3">
-                        <img src="/static/images/sejal.jpg" alt="User Image" class="img-fluid">
-                        <div class="user-info">
-                            <h6>Jane Smith</h6>
-                            <p>Chat</p>
-                        </div>
-                    </div>
+<ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="online-tab" data-toggle="tab" href="#online" role="tab" aria-controls="online" aria-selected="true">Online</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="inbox-tab" data-toggle="tab" href="#inbox" role="tab" aria-controls="inbox" aria-selected="false">Inbox</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="chat-tab" data-toggle="tab" href="#chat" role="tab" aria-controls="chat" aria-selected="false"><span class="fa fa-comment"></span></a>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade show active" id="online" role="tabpanel" aria-labelledby="online-tab">
+            <div class="user-card mt-3">
+                <div class="user-info">
+                    <h6>Anshu Kumar</h6>
                 </div>
             </div>
         </div>
+        <div class="tab-pane fade" id="inbox" role="tabpanel" aria-labelledby="inbox-tab">
+            <div class="scrollable mt-3">
+                {% for message in profile_data.messages %}
+                    <div class="message" data-id="{{ message.id }}" data-subject="{{ message.subject }}" data-content="{{ message.content }}" data-date="{{ message.date }}">
+                        <span class="delete-btn">&times;</span>
+                        <h6>{{ message.subject }}</h6>
+                        <i>{{ message.date }}</i><br>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="tab-pane fade" id="chat" role="tabpanel" aria-labelledby="chat-tab">
+            <div class="user-card mt-3">
+                <img src="/static/images/sejal.jpg" alt="User Image" class="img-fluid">
+                <div class="user-info">
+                    <h6>Jane Smith</h6>
+                    <p>Chat</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for displaying message details -->
+    <div class="modal fade" id="messageModal" tabindex="-1" role="dialog" aria-labelledby="messageModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="messageModalLabel">Message Details</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h6 id="modalSubject"></h6>
+                    <p id="modalContent"></p>
+                    <i id="modalDate"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+        </div>
+
+        <!-- end Inbox Tabs -->
+
+
 
         <!-- Right Column -->
         <div class="col-md-9">
             <!-- Profit Chart -->
             <div class="profit-chart">
-                <img src="/static/images/blog_2.JPG" alt="Profit Chart" class="img-fluid">
+
+                 <h2 class="text-center text-white mb-4">Profit Chart</h2>
+                <div class="chart-container bg-dark p-4 rounded">
+                    <canvas id="profitChart" width="400" height="200"></canvas>
+                </div>
+
             </div>
 
             <!-- Profile Form and Tabs -->
@@ -119,6 +169,7 @@
                     <li class="nav-item">
                         <a class="nav-link active" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="true">Profile</a>
                     </li>
+                    {% if profile_data.user_account == 'Active' and profile_data.user_status == 'Running' %}
                     <li class="nav-item">
                         <a class="nav-link" id="apply-loan-tab" data-toggle="tab" href="#apply-loan" role="tab" aria-controls="apply-loan" aria-selected="false">Apply Loan</a>
                     </li>
@@ -131,30 +182,63 @@
                     <li class="nav-item">
                         <a class="nav-link" id="transaction-tab" data-toggle="tab" href="#transaction" role="tab" aria-controls="transaction" aria-selected="false">Transaction</a>
                     </li>
+
+                    {% endif %}
                 </ul>
                 <div class="tab-content" id="profileTabContent">
                     <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
-                        <form class="mt-3">
-                            <div class="form-group">
-                                <label for="name">Name</label>
-                                <input type="text" class="form-control" id="name" placeholder="Enter name" value="Andrew Korane">
-                            </div>
-                            <div class="form-group">
-                                <label for="email">Email address</label>
-                                <input type="email" class="form-control" id="email" placeholder="Enter email" value="andrewkorane@gmail.com">
-                            </div>
-                            <div class="form-group">
-                                <label for="mobile">Mobile</label>
-                                <input type="text" class="form-control" id="mobile" placeholder="Enter mobile" value="09320123222">
-                            </div>
-                            <div class="form-group">
-                                <label for="address">Address</label>
-                                <input type="text" class="form-control" id="address" placeholder="Enter address" value="Ahmedabad">
-                            </div>
-                            <button type="submit" class="btn btn-primary">Submit</button>
-                            <button type="button" class="btn btn-secondary">Edit</button>
-                        </form>
+                       <form class="mt-3" method="post" action="/update_profile/">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" placeholder="Enter username" value="{{ profile_data.username }}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="name">Name</label>
+                            <input type="text" class="form-control" id="name" name="name" placeholder="Enter name" value="{{ profile_data.name }}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email address</label>
+                            <input type="email" class="form-control" id="email" name="email" placeholder="Enter email" value="{{ profile_data.email }}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="address">Address</label>
+                            <input type="text" class="form-control" id="address" name="address" placeholder="Enter address" value="{{ profile_data.address }}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="gender">Gender</label>
+                            <select class="form-control" id="gender" name="gender" disabled>
+                                <option value="Male" {% if profile_data.gender == 'Male' %}selected{% endif %}>Male</option>
+                                <option value="Female" {% if profile_data.gender == 'Female' %}selected{% endif %}>Female</option>
+                                <option value="Other" {% if profile_data.gender == 'Other' %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="dob">Date of Birth</label>
+                            <input type="date" class="form-control" id="dob" name="dob" value="{{ profile_data.dob|date:'Y-m-d' }}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="mobile">Mobile Number</label>
+                            <input type="text" class="form-control" id="mobile" name="mobile" placeholder="Enter mobile number" value="{{ profile_data.mobile }}" readonly>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                         <button type="button" class="btn btn-secondary" id="editButton">Edit</button>
+
+                    </form>
+
                     </div>
+                    <script>
+                        document.getElementById('editButton').addEventListener('click', function() {
+                            // Enable fields for editing
+                            document.getElementById('name').readOnly = false;
+                            document.getElementById('address').readOnly = false;
+                            document.getElementById('gender').disabled = false;
+                            document.getElementById('dob').readOnly = false;
+
+                            // Change button text and disable itself
+                            this.disabled = true;
+                        });
+                    </script>
                     <div class="tab-pane fade" id="apply-loan" role="tabpanel" aria-labelledby="apply-loan-tab">
                         <form class="mt-3">
                             <div class="form-group">
@@ -234,6 +318,209 @@
     </div>
 </div>
 <br><br>
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Basic Details</h1>
+      </div>
+      <div class="modal-body">
+        <form method="post" action="/activate/">
+			{% csrf_token %}
+          <div class="mb-3">
+            <label for="recipient-name" class="col-form-label">Pan Card :</label>
+            <input type="text" class="form-control" name="pancard" id="pancard">
+          </div>
+			 <div class="mb-3">
+            <label for="recipient-name" class="col-form-label">Aadhar Card :</label>
+            <input type="text" class="form-control" name="aadharno" id="aadharno">
+          </div>
+             <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="" id="check1">
+                <label class="form-check-label" for="check1">Accept all term & condition.</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="" id="check2">
+                <label class="form-check-label" for="check2">All details are coorectly filled</label>
+            </div>
+			<div class="modal-footer">
+       			 <button type="submit" class="btn btn-primary">Activate</button>
+			</div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+ {% if messages %}
+        <div id="successModal" class="modal fade" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="successModalLabel">Success</h5>
+                    </div>
+                    <div class="modal-body">
+                        {% for message in messages %}
+                            <p>{{ message }}</p>
+                        {% endfor %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <script>
+        $(document).ready(function() {
+            {% if messages %}
+                $('#successModal').modal('show');
+            {% endif %}
+        });
+    </script>
+<!-- Add this script at the bottom of your template -->
+
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Attach click event to each message for viewing details
+        document.querySelectorAll('.message').forEach(function(message) {
+            message.addEventListener('click', function(event) {
+                if (event.target.classList.contains('delete-btn')) {
+                    return; // Ignore the click if it's on the delete button
+                }
+                const subject = this.getAttribute('data-subject');
+                const content = this.getAttribute('data-content');
+                const date = this.getAttribute('data-date');
+
+                // Populate modal with message details
+                document.getElementById('modalSubject').innerText = subject;
+                document.getElementById('modalContent').innerText = content;
+                document.getElementById('modalDate').innerText = date;
+
+                // Show the modal
+                $('#messageModal').modal('show');
+            });
+        });
+
+        // Attach click event to each delete button
+        document.querySelectorAll('.delete-btn').forEach(function(button) {
+            button.addEventListener('click', function(event) {
+                const messageDiv = this.closest('.message');
+                const messageId = messageDiv.getAttribute('data-id');
+
+                // Send delete request to the server
+                fetch(`/delete_message/${messageId}/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}', // Include CSRF token for security
+                    },
+                })
+                .then(response => {
+                    if (response.ok) {
+                        messageDiv.remove(); // Remove message div from the DOM
+                    } else {
+                        alert('Failed to delete message');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting message:', error);
+                    alert('Failed to delete message');
+                });
+            });
+        });
+    });
+    </script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        fetch('/api/profit-data/')
+            .then(response => response.json())
+            .then(data => {
+                const months = data.map(item => item.month);
+                const profits = data.map(item => item.profit);
+
+                const ctx = document.getElementById('profitChart').getContext('2d');
+                const profitChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: 'Profit',
+                            data: profits,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)', // Line fill color
+                            borderWidth: 2,
+                            fill: true, // Fill the area under the line
+                            pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgba(75, 192, 192, 1)'
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₹ ' + value;
+                                    },
+                                    color: '#ecf0f1'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#ecf0f1'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#ecf0f1'
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        label += '₹ ' + context.parsed.y;
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        elements: {
+                            point: {
+                                radius: 5,
+                                hoverRadius: 7
+                            }
+                        }
+                    }
+                });
+            });
+    });
+</script>
+
+
+
 
 <style>
     .container {
@@ -309,5 +596,28 @@
     .user-info {
         margin-left: 10px;
     }
+     .message {
+            position: relative;
+            cursor: pointer;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .message:hover {
+            background-color: #f0f0f0;
+        }
+
+        .scrollable {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: red;
+            cursor: pointer;
+        }
 </style>
 {% endblock %}
