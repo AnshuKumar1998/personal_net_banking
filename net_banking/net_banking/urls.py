@@ -42,4 +42,6 @@ urlpatterns = [
 
     path('activate/',views.activate,name='activate'),
 
+    path('update_profile/',views.update_profile,name='update_profile'),
+
 ]

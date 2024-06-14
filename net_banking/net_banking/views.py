@@ -1,5 +1,5 @@
 import random
-
+from datetime import datetime
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
@@ -160,11 +160,37 @@ def new_account_holder(request):
     return render(request, 'users_dir/signup.html')
 
 
-
+@login_required
 def activate(request):
     if request.method == 'POST':
+        pan_no = request.POST.get('pancard')
+        aadhar_no = request.POST.get('aadharno')
+
+
+        # Check if PAN number or Aadhar number already exists
+        if Account_Details.objects.filter(pan_no=pan_no).exists():
+            messages.error(request, 'PAN number already exists')
+            return redirect('user_account')
+        elif Account_Details.objects.filter(aadhar_no=aadhar_no).exists():
+            messages.error(request, 'Aadhar number already exists')
+            return redirect('user_account')
+
         # Assuming form data is validated and cleaned
         account_holder = Account_holders.objects.get(user=request.user)
+        dob_str = account_holder.dob
+
+        if isinstance(dob_str, str):
+            dob = datetime.strptime(dob_str, '%Y-%m-%d').date()
+        else:
+            dob = dob_str
+
+            # Calculate the user's age
+        today = datetime.today().date()
+        age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+        if age < 18:
+            messages.error(request, 'You must be at least 18 years old')
+            return redirect('user_account')
+
         account_details = Account_Details.objects.create(
             name=account_holder.mobile,
             username=account_holder.username,
@@ -179,7 +205,9 @@ def activate(request):
             aadhar_no=request.POST['aadharno']
         )
         account_holder.account_status = 'Active'  # Example: Updating account_status column
-        account_holder.save()  #
+        account_holder.save()
+        messages.success(request, 'Account Successfully Activated')#
+        return redirect('user_account')
 
     return render(request, 'users_dir/user_account.html')
 
@@ -192,3 +220,21 @@ def generate_unique_account_number():
         # Check if account number already exists in database
         if not Account_Details.objects.filter(account_no=account_number).exists():
             return account_number
+
+@login_required
+def update_profile(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        gender = request.POST.get('gender')
+        address = request.POST.get('address')
+        dob = request.POST.get('dob')
+
+        account_holder = Account_holders.objects.get(user=request.user)
+        account_holder.name = name
+        account_holder.gender = gender
+        account_holder.address = address
+        account_holder.dob = dob
+        account_holder.save()
+        messages.success(request, 'Profile Successfully Updated')  #
+        return redirect('user_account')
+    return render(request, 'users_dir/user_account.html')
