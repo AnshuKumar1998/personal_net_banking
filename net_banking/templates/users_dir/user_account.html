@@ -102,12 +102,16 @@
                 </div>
             </div>
         </div>
-        <div class="tab-pane fade" id="inbox" role="tabpanel" aria-labelledby="inbox-tab">
-            <div class="scrollable mt-3">
+       <div class="tab-pane fade" id="inbox" role="tabpanel" aria-labelledby="inbox-tab">
+        <div class="scrollable mt-3">
                 {% for message in profile_data.messages %}
-                    <div class="message" data-id="{{ message.id }}" data-subject="{{ message.subject }}" data-content="{{ message.content }}" data-date="{{ message.date }}">
-                        <span class="delete-btn">&times;</span>
-                        <h6>{{ message.subject }}</h6>
+                    <div class="message {% if not message.read %}unread{% endif %}"
+                         data-id="{{ message.id }}"
+                         data-subject="{{ message.subject }}"
+                         data-content="{{ message.content }}"
+                         data-date="{{ message.date }}">
+                        <span style="font-size:24px" class="delete-btn fa">&#xf014;</span>
+                        <h6>{% if not message.read %}<strong>{% endif %}{{ message.subject }}{% if not message.read %}</strong>{% endif %}</h6>
                         <i>{{ message.date }}</i><br>
                     </div>
                 {% endfor %}
@@ -177,7 +181,7 @@
                         <a class="nav-link" id="repayment-tab" data-toggle="tab" href="#repayment" role="tab" aria-controls="repayment" aria-selected="false">Repayment</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="statements-tab" data-toggle="tab" href="#statements" role="tab" aria-controls="statements" aria-selected="false">Statements</a>
+                        <a class="nav-link" id="statements-tab" data-toggle="tab" href="#statements" role="tab" aria-controls="statements" aria-selected="false">Loan History</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" id="transaction-tab" data-toggle="tab" href="#transaction" role="tab" aria-controls="transaction" aria-selected="false">Transaction</a>
@@ -240,19 +244,38 @@
                         });
                     </script>
                     <div class="tab-pane fade" id="apply-loan" role="tabpanel" aria-labelledby="apply-loan-tab">
-                        <form class="mt-3">
+                        <form class="mt-3" method="POST" action="/loan_form/">
+                            {% csrf_token %}
                             <div class="form-group">
                                 <label for="loan-amount">Loan Amount</label>
-                                <input type="number" class="form-control" id="loan-amount" placeholder="Enter loan amount">
+                                <input type="number" class="form-control" name="loan_amt" placeholder="Enter loan amount">
                             </div>
-                            <div class="form-group">
+                             <div class="form-group">
                                 <label for="loan-purpose">Purpose</label>
-                                <input type="text" class="form-control" id="loan-purpose" placeholder="Enter loan purpose">
+                                <select class="form-control" id="purpose" name="purpose">
+                                    <option value="business">Business</option>
+                                    <option value="study">Study</option>
+                                    <option value="investment">Investment</option>
+                                    <option value="other">Other</option>
+                                </select>
                             </div>
                             <div class="form-group">
-                                <label for="loan-term">Term (years)</label>
-                                <input type="number" class="form-control" id="loan-term" placeholder="Enter loan term">
+                                <label for="loan-term">Term (month)</label>
+                                <input type="number" class="form-control" name="loan_period" id="loan-term" placeholder="Enter loan term">
                             </div>
+                             <div class="form-group">
+                                <label for="loan-term">Loan Reference Code</label>
+                                <input type="number" class="form-control" name="reference_no" placeholder="Enter Loan Reference Code (Optional)">
+                            </div>
+                             <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" required>
+                                <label class="form-check-label" for="check2">According to MINI Bank rule if you not pay loan with interest at a time then MINI Bank append fine  of your loan amount Rs. 5 per day</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" required>
+                                <label class="form-check-label" for="check1">If you want Renewal the submission date of loan then Per month increases Interest Rate 1%.</label>
+                            </div>
+                            <br>
                             <button type="submit" class="btn btn-primary">Apply</button>
                         </form>
                     </div>
@@ -269,28 +292,76 @@
                             <button type="submit" class="btn btn-primary">Repay</button>
                         </form>
                     </div>
-                    <div class="tab-pane fade" id="statements" role="tabpanel" aria-labelledby="statements-tab">
-                        <form class="mt-3">
-                            <div class="form-group">
-                                <label for="statement-month">Select Month</label>
-                                <select class="form-control" id="statement-month">
-                                    <option>January</option>
-                                    <option>February</option>
-                                    <option>March</option>
-                                    <option>April</option>
-                                    <option>May</option>
-                                    <option>June</option>
-                                    <option>July</option>
-                                    <option>August</option>
-                                    <option>September</option>
-                                    <option>October</option>
-                                    <option>November</option>
-                                    <option>December</option>
-                                </select>
+                  <div class="tab-pane fade" id="statements" role="tabpanel" aria-labelledby="statements-tab">
+                    {% for loan in profile_data.loan_details %}
+                        <div class="card highlight">
+                            <div class="card-header" id="heading{{ forloop.counter }}">
+                                <h2 class="mb-0">
+                                    <button class="btn btn btn-secondary btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapse{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse{{ forloop.counter }}" style="color: white;">
+                                       # {{ loan.loan_id }}
+                                    </button>
+                                    <!-- Adjusted for spacing -->
+                                    {% if loan.loan_status == "Running" %}
+                                        <button type="button" class="btn btn-primary ml-2">Running</button>
+                                    {% elif loan.loan_status == "Closed" %}
+                                        <button type="button" class="btn btn-success ml-2">Close</button>
+                                    {% elif loan.loan_status == "Processing" %}
+                                        <button type="button" class="btn btn-warning ml-2">Processing</button>
+                                    {% elif loan.loan_status == "Hold" %}
+                                        <button type="button" class="btn btn-info ml-2">Hold</button>
+                                    {% elif loan.loan_status == "Cancel" %}
+                                        <button type="button" class="btn btn-danger ml-2">Cancel</button>
+                                    {% endif %}
+                                </h2>
                             </div>
-                            <button type="submit" class="btn btn-primary">Get Statement</button>
-                        </form>
-                    </div>
+                            <div id="collapse{{ forloop.counter }}" class="collapse" aria-labelledby="heading{{ forloop.counter }}" data-parent="#accordionExample">
+                                <div class="card-body">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Loan Amount</th>
+                                                <th>Interest</th>
+                                                <th>Purpose</th>
+                                                <th>Period</th>
+                                                <th>Released Date</th>
+                                                <th>Return Amount</th>
+                                                <th>Close Date</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>{{ loan.name }}</td>
+                                                <td>{{ loan.loan_principle_amt }}</td>
+                                                <td>{{ loan.loan_intrest_rate }}</td>
+                                                <td>{{ loan.loan_purpose }}</td>
+                                                <td>{{ loan.loan_period }}</td>
+                                                <td>{{ loan.loan_release_date }}</td>
+                                                <td>{{ loan.loan_returing_amt }}</td>
+                                                <td>{{ loan.loan_close_date }}</td>
+                                                <td>{{ loan.loan_status }}</td>
+                                            </tr>
+                                        </tbody>
+                                           {% if loan.loan_status == "Cancel" or loan.loan_status == "Hold" or loan.loan_status == "Processing" or loan.loan_status == "Close" %}
+                                                {% if loan.loan_description %}
+                                                    <table class="table table-bordered">
+                                                         <thead>
+                                                             <tbody>
+                                                    <tr><td><strong>Reason : </strong>{{ loan.loan_description }}</td></tr>
+                                                             </tbody>
+                                                        </thead>
+                                                    </table>
+                                                {% endif %}
+                                           {% endif %}
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+
                     <div class="tab-pane fade" id="transaction" role="tabpanel" aria-labelledby="transaction-tab">
                         <form class="mt-3">
                             <div class="form-group">
@@ -519,11 +590,15 @@
     });
 </script>
 
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
 
 
 
 <style>
-    .container {
+.container {
         margin-top: 0px;
     }
 
@@ -601,6 +676,8 @@
             cursor: pointer;
             padding: 10px;
             border-bottom: 1px solid #ccc;
+            margin-bottom: 5px;
+            border-radius: 5px;
         }
 
         .message:hover {
@@ -619,5 +696,6 @@
             color: red;
             cursor: pointer;
         }
+
 </style>
 {% endblock %}

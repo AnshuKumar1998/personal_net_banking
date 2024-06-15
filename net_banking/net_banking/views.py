@@ -1,19 +1,17 @@
 import random
 from datetime import datetime
-
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit
-from app.forms import UserForm
+from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit,UserLoanDetails
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from app.help import kolkata_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number
+
 
 
 def master(request):
@@ -51,6 +49,7 @@ def login(request):
             try:
                 profile = Account_holders.objects.get(user=user)
                 user_messages = User_Inbox.objects.filter(username=profile.username)
+                loan_details = UserLoanDetails.objects.filter(username=profile.username)
                 try:
                     account_data = Account_Details.objects.get(username=username)
                 except Account_Details.DoesNotExist:
@@ -72,7 +71,8 @@ def login(request):
                     'pan_no': account_data.pan_no if account_data else None,
                     'aadhar_no': account_data.aadhar_no if account_data else None,
                     'last_login': account_data.last_login if account_data else None,
-                    'messages': user_messages  # Ensure messages are included in the context
+                    'messages': user_messages,  # Ensure messages are included in the context
+                    'loan_details':loan_details
                 }
             except Account_holders.DoesNotExist:
                 profile_data = {}
@@ -97,8 +97,10 @@ def user_account(request):
         profile = Account_holders.objects.get(user=request.user)
         try:
             account_data = Account_Details.objects.get(username=profile.username)
+            loan_data = UserLoanDetails.objects.filter(username=profile.username)
         except Account_Details.DoesNotExist:
             account_data = None
+            loan_data = None
 
         user_messages = User_Inbox.objects.filter(username=profile.username)
 
@@ -119,6 +121,7 @@ def user_account(request):
             'aadhar_no': account_data.aadhar_no if account_data else None,
             'last_login': account_data.last_login if account_data else None,
             'messages': user_messages,
+            'loan_details':loan_data
         }
     except Account_holders.DoesNotExist:
         profile_data = {}
@@ -207,7 +210,7 @@ def activate(request):
             return redirect('user_account')
 
         account_details = Account_Details.objects.create(
-            name=account_holder.mobile,
+            name=account_holder.name,
             username=account_holder.username,
             mobile=account_holder.mobile,
             email=account_holder.email,
@@ -237,15 +240,6 @@ def activate(request):
 
     return render(request, 'users_dir/user_account.html')
 
-
-def generate_unique_account_number():
-    while True:
-        # Generate random 8-digit number
-        account_number = random.randint(10000000, 99999999)  # Random number between 10000000 and 99999999
-
-        # Check if account number already exists in database
-        if not Account_Details.objects.filter(account_no=account_number).exists():
-            return account_number
 
 @login_required
 def update_profile(request):
@@ -296,3 +290,67 @@ def get_profit_data(request):
 
 def chart_view(request):
     return render(request, 'users_dir/blog.html')
+
+@login_required
+def loan_form(request):
+    if request.method == "POST":
+        # Get form inputs
+        loan_amt = float(request.POST.get("loan_amt"))  # Convert to float
+        loan_purpose = request.POST.get("purpose")
+        loan_period = float(request.POST.get("loan_period"))  # Convert to float
+        loan_refrence_code = request.POST.get("reference_no")
+
+        # Calculate due date based on loan period
+        due_date = calculate_due_date(int(loan_period))  # Ensure period is an integer for calculation
+        loan_id = generate_unique_loan_id()
+        # Define interest rate (assuming 2% per month)
+        interest_rate = 0.02
+
+        # Calculate returning amount based on simple interest formula
+        loan_returning_amt = loan_amt * interest_rate * loan_period + loan_amt
+
+        # Fetch account details for the logged-in user
+        account_holder = Account_holders.objects.get(user=request.user)
+        account_details = account_holder.account_details
+
+        # Create UserLoanDetails instance
+        UserLoanDetails.objects.create(
+            user=account_details,
+            username=account_details.username,
+            name=account_details.name,
+            email=account_details.email,
+            mobile=account_details.mobile,
+            loan_principle_amt=loan_amt,
+            loan_purpose=loan_purpose,
+            loan_period=loan_period,
+            loan_release_date=kolkata_date(),
+            loan_close_date=due_date,
+            loan_id=loan_id,  # Generate unique loan ID
+            loan_intrest_rate=interest_rate,
+            loan_returing_amt=loan_returning_amt,
+            loan_fine_amt=5,  # Example fine amount
+            loan_status="Processing",
+            loan_renewal_times=0,
+            loan_refrence_code=loan_refrence_code,
+        )
+
+        # Create User_Inbox entry
+        User_Inbox.objects.create(
+            user=account_holder,
+            username=account_holder.username,
+            name=account_holder.name,
+            email=account_holder.email,
+            mobile=account_holder.mobile,
+            subject="Loan Request is Processing",
+            content=f"Your Loan ₹ {loan_amt:.2f} for {loan_purpose} for {loan_period} month(s) applied.\n"
+                    f"You can also check the loan status through Loan Id.\nYour loan ID is: {loan_id}.\n"
+                    "Thank you for visiting our bank.",
+            date=kolkata_date()
+        )
+
+        # Display success message and redirect
+        messages.success(request, 'Loan Successfully Applied')
+        return redirect('user_account')
+
+    # If not a POST request, render the loan form template
+    return render(request, 'users_dir/user_account.html')

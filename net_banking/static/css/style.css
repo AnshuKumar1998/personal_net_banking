@@ -24,6 +24,7 @@ body a {
 html {
   scroll-behavior: smooth;
 }
+
 body img {
     max-width: 100%;
 }
@@ -1995,5 +1996,7 @@ a.move-top span{
 @media(max-width:320px) {
     
 }
+
+
 
 /*-- //responsive design --*/

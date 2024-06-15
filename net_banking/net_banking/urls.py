@@ -49,6 +49,8 @@ urlpatterns = [
 
     path('api/profit-data/', views.get_profit_data, name='get_profit_data'),
 
-path('chart/', views.chart_view, name='chart_view'),
+    path('chart/', views.chart_view, name='chart_view'),
+
+    path('loan_form/',views.loan_form,name="loan_form")
 ]
 
