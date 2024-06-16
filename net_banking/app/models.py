@@ -89,6 +89,7 @@ class UserLoanDetails(models.Model):
     email = models.EmailField()
     mobile = models.CharField(max_length=15)
     loan_principle_amt = models.FloatField()
+    loan_paid_amt = models.FloatField(default=0.0)
     loan_purpose = models.CharField(choices=status2,max_length=20)
     loan_period = models.FloatField()
     loan_release_date = models.DateField()
@@ -104,3 +105,24 @@ class UserLoanDetails(models.Model):
 
     def __str__(self):
         return f"{self.email} - {self.loan_principle_amt} - {self.loan_status}"
+
+
+class UserTransactionDetails(models.Model):
+    user = models.ForeignKey(Account_holders, on_delete=models.CASCADE, related_name='transactions')
+    username = models.CharField(max_length=100)
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    mobile = models.CharField(max_length=15)
+    transaction_id = models.CharField(max_length=100)  # Unique transaction identifier
+    transaction_date = models.DateTimeField(auto_now_add=True)  # Date and time of the transaction
+    transaction_type = models.CharField(max_length=50)  # Type of transaction (e.g., 'payment', 'refund')
+    loan_id = models.CharField(max_length=100, null=True, blank=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)  # Amount of the transaction
+    payment_method = models.CharField(max_length=50)  # Payment method (e.g., 'credit card', 'bank transfer')
+    payment_status = models.CharField(max_length=50)  # Status of the payment (e.g., 'completed', 'pending', 'failed')
+    description = models.TextField(null=True, blank=True)  # Additional details about the transaction
+    class Meta:
+        ordering = ['-transaction_date']  # Orders transactions by date, most recent first
+
+    def __str__(self):
+        return f'Transaction {self.transaction_id} by {self.username}'

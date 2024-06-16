@@ -1,29 +1,29 @@
-import random
 from datetime import datetime
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
-from django.contrib.auth.models import User
+from django.db import transaction
 from django.http import JsonResponse
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit,UserLoanDetails
+from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit,UserLoanDetails,UserTransactionDetails
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from app.help import kolkata_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number
+from django.contrib.auth.models import User
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+
 
 
 
 def master(request):
     return render(request,'master.html')
 
-
 def index(request):
     return render(request,'index.html')
 
 def blog(request):
     return render(request,'users_dir/blog.html')
-
 
 def contact_us(request):
     if request.method == "POST":
@@ -46,63 +46,38 @@ def login(request):
 
         if user is not None:
             auth_login(request, user)
-            try:
-                profile = Account_holders.objects.get(user=user)
-                user_messages = User_Inbox.objects.filter(username=profile.username)
-                loan_details = UserLoanDetails.objects.filter(username=profile.username)
-                try:
-                    account_data = Account_Details.objects.get(username=username)
-                except Account_Details.DoesNotExist:
-                    account_data = None  # Handle case where account details don't exist
-
-                profile_data = {
-                    'name': profile.name,
-                    'username': profile.username,
-                    'gender': profile.gender,
-                    'mobile': profile.mobile,
-                    'email': profile.email,
-                    'dob': profile.dob,
-                    'address': profile.address,
-                    'user_account': profile.account_status,
-                    'user_status': profile.user_status,
-                    'account_no': account_data.account_no if account_data else None,
-                    'upi_no': account_data.upi_no if account_data else None,
-                    'current_amt': account_data.current_amt if account_data else None,
-                    'pan_no': account_data.pan_no if account_data else None,
-                    'aadhar_no': account_data.aadhar_no if account_data else None,
-                    'last_login': account_data.last_login if account_data else None,
-                    'messages': user_messages,  # Ensure messages are included in the context
-                    'loan_details':loan_details
-                }
-            except Account_holders.DoesNotExist:
-                profile_data = {}
-                messages.error(request, 'User account does not exist.')  # Handle if user account does not exist
-            except Exception as e:
-                profile_data = {}
-                messages.error(request, f'Error: {str(e)}')  # Handle other exceptions
-
-            context = {
-                'profile_data': profile_data,
-            }
-
-            return render(request, 'users_dir/user_account.html', context)
+            return redirect('user_account')
         else:
             messages.error(request, 'Invalid username or password.')
+            return render(request, 'users_dir/login.html')
 
     return render(request, 'users_dir/login.html')
 
+
+@never_cache
 @login_required
 def user_account(request):
     try:
         profile = Account_holders.objects.get(user=request.user)
         try:
             account_data = Account_Details.objects.get(username=profile.username)
-            loan_data = UserLoanDetails.objects.filter(username=profile.username)
         except Account_Details.DoesNotExist:
             account_data = None
-            loan_data = None
 
+        loan_data = UserLoanDetails.objects.filter(username=profile.username)
         user_messages = User_Inbox.objects.filter(username=profile.username)
+
+        # Fetching transaction data
+        transactions = UserTransactionDetails.objects.filter(username=request.user)
+        transaction_list = list(transactions.values(
+            'loan_id',
+            'amount',
+            'transaction_type',
+            'transaction_id',
+            'payment_status',
+            'payment_method',
+            'transaction_date'
+        ))
 
         profile_data = {
             'name': profile.name,
@@ -121,7 +96,8 @@ def user_account(request):
             'aadhar_no': account_data.aadhar_no if account_data else None,
             'last_login': account_data.last_login if account_data else None,
             'messages': user_messages,
-            'loan_details':loan_data
+            'loan_details': loan_data,
+            'transactions': transaction_list  # Include transactions in context
         }
     except Account_holders.DoesNotExist:
         profile_data = {}
@@ -132,12 +108,15 @@ def user_account(request):
     }
 
     return render(request, 'users_dir/user_account.html', context)
+
 def logout(request):
     auth_logout(request)
-    response = redirect('login')  # Redirect to the login page or any other page after logout
+    response = redirect('login')
     response.delete_cookie('sessionid')  # Delete the session cookie
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
     return response
-
 
 
 def new_account_holder(request):
@@ -282,12 +261,11 @@ def delete_message(request, message_id):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
-
 def get_profit_data(request):
     data = MonthlyProfit.objects.all().values('month', 'profit')
     return JsonResponse(list(data), safe=False)
 
-
+@login_required
 def chart_view(request):
     return render(request, 'users_dir/blog.html')
 
@@ -354,3 +332,131 @@ def loan_form(request):
 
     # If not a POST request, render the loan form template
     return render(request, 'users_dir/user_account.html')
+
+@login_required
+def payment_page(request):
+    loan_id = request.GET.get('loan_id')
+    context = {}
+
+    try:
+        loan_details = UserLoanDetails.objects.get(loan_id=loan_id, username=request.user)
+        total = (loan_details.loan_returing_amt + loan_details.loan_fine_amt) - loan_details.loan_paid_amt
+
+        context = {
+            'loan_id': loan_details.loan_id,
+            'amount': loan_details.loan_principle_amt,
+            'return_amount': loan_details.loan_returing_amt,
+            'fine': loan_details.loan_fine_amt,
+            'name': loan_details.name,
+            'paid':loan_details.loan_paid_amt,
+            'total': total,
+        }
+    except UserLoanDetails.DoesNotExist:
+        messages.error(request, "You do not have permission to view this loan.")
+
+    return render(request, 'payment_page.html', context)
+
+@login_required
+def process_payment(request):
+    if request.method == "POST":
+        loan_id = request.POST.get('loan_id')
+        pay_amt = float(request.POST.get('pay_amt'))
+
+        try:
+            account_holder = Account_holders.objects.get(user=request.user)
+            loan_details = get_object_or_404(UserLoanDetails, loan_id=loan_id, username=request.user)
+
+            total = (loan_details.loan_returing_amt + loan_details.loan_fine_amt) - loan_details.loan_paid_amt
+
+            with transaction.atomic():
+                if pay_amt == total:
+                    loan_details.loan_status = "Closed"
+                    loan_details.save()
+                    transaction_id = 000  # Replace with actual logic for generating transaction ID
+                    UserTransactionDetails.objects.create(
+                        user=account_holder,
+                        username=account_holder.username,
+                        name=account_holder.name,
+                        email=account_holder.email,
+                        mobile=account_holder.mobile,
+                        transaction_id=transaction_id,
+                        transaction_date=kolkata_date(),
+                        transaction_type="payment",
+                        loan_id=loan_id,
+                        amount=pay_amt,
+                        payment_method="Credit Card",
+                        payment_status="Completed",
+                        description=""
+                    )
+                    User_Inbox.objects.create(
+                        user=account_holder,
+                        username=account_holder.username,
+                        name=account_holder.name,
+                        email=account_holder.email,
+                        mobile=account_holder.mobile,
+                        subject="Loan Closed",
+                        content=f"Your loan {pay_amt} was successfully closed.\nThank you for choosing us.",
+                        date=timezone.now().date()
+                    )
+                    messages.success(request, "Loan closed successfully.")
+                elif pay_amt < total:
+                    remaining = total - pay_amt
+                    loan_details.loan_paid_amt += pay_amt
+                    loan_details.save()
+                    transaction_id = 000  # Replace with actual logic for generating transaction ID
+                    UserTransactionDetails.objects.create(
+                        user=account_holder,
+                        username=account_holder.username,
+                        name=account_holder.name,
+                        email=account_holder.email,
+                        mobile=account_holder.mobile,
+                        transaction_id=transaction_id,
+                        transaction_date=kolkata_date(),
+                        transaction_type="payment",
+                        loan_id=loan_id,
+                        amount=pay_amt,
+                        payment_method="Credit Card",
+                        payment_status="Completed",
+                        description=""
+                    )
+                    User_Inbox.objects.create(
+                        user=account_holder,
+                        username=account_holder.username,
+                        name=account_holder.name,
+                        email=account_holder.email,
+                        mobile=account_holder.mobile,
+                        subject="Loan Paid Transaction",
+                        content=f"Your payment of {pay_amt} was successful. Remaining amount: {remaining}",
+                        date=timezone.now().date()
+                    )
+                    messages.success(request, f"Your payment of {pay_amt} was successful. Remaining amount: {remaining}")
+                else:
+                    messages.error(request, "Invalid payment amount.")
+
+        except Account_holders.DoesNotExist:
+            messages.error(request, "You do not have permission to view this account.")
+        except UserLoanDetails.DoesNotExist:
+            messages.error(request, "You do not have permission to view this loan.")
+
+        return redirect('user_account')
+
+    return redirect('user_account')
+
+@login_required
+def get_transactions(request):
+    transactions = UserTransactionDetails.objects.filter(username=request.user)
+    transaction_list = list(transactions.values(
+        'loan_id',
+        'amount',
+        'transaction_type',
+        'transaction_id',
+        'payment_status',
+        'payment_method',
+        'transaction_date'
+    ))
+    return JsonResponse({'data': transaction_list})
+
+@login_required
+def transaction_history(request):
+    return render(request, 'transaction_history.html')
+

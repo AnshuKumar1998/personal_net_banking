@@ -1,0 +1,83 @@
+{% extends 'master.html' %}
+
+{% block body %}
+
+
+
+<!-- inner-banner -->
+<section class="inner-banner" id="home">
+	<div class="inner-layer">
+		<div class="container">
+		</div>
+	</div>
+</section>
+<!-- //inner-banner -->
+
+<!-- breadcrumb -->
+<div class="breadcrumb-w3pvt">
+	<div class="container">
+	<nav aria-label="breadcrumb">
+		<ol class="breadcrumb">
+			<li class="breadcrumb-item">
+				<a href="{% url 'index' %}">Home</a>
+			</li>
+			<li class="breadcrumb-item" aria-current="page">Log In</li>
+            <li class="breadcrumb-item" href="/user_account/" aria-current="page">Hi, {{ name }}</li>
+            <li class="breadcrumb-item" aria-current="page">Payment Details</li>
+		</ol>
+	</nav>
+	</div>
+</div>
+
+<div class="container mt-5">
+        <h1 class="mb-4">Payment Details</h1>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Loan ID</th>
+                    <th>Name</th>
+                    <th>Loan Amount</th>
+                    <th>Return Amount</th>
+                    <th>Fine</th>
+                    <th>Paid Amount</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>#{{ loan_id }}</td>
+                    <td>{{ name }}</td>
+                    <td>{{ amount }}</td>
+                    <td>{{ return_amount }}</td>
+                    <td>{{ fine }}</td>
+                    <td>{{ paid }}</td>
+                    <td>{{ total }}</td>
+                </tr>
+            </tbody>
+        </table>
+        <!-- Add your payment form or integration here -->
+        <form action="/process_payment/" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="loan_id" value="{{ loan_id }}">
+           <div class="form-group">
+               <label for="pay_amt"><strong>Payment Amount</strong></label>
+                <input type="number" class="form-control" min="100" name="pay_amt" placeholder="Enter Amount" style="width: 200px;">
+            </div>
+            <br><br>
+            <button type="submit" class="btn btn-primary">Proceed to Payment</button>
+            <br>
+        </form>
+    </div>
+    <br>
+     {% if messages %}
+        <script type="text/javascript">
+            {% for message in messages %}
+                alert("{{ message }}");
+            {% endfor %}
+        </script>
+    {% endif %}
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+{% endblock %}
