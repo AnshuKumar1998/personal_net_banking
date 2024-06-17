@@ -3,16 +3,16 @@ from django.contrib.auth import authenticate, login as auth_login, logout as aut
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
 from django.db import transaction
+from django.db.models import F, ExpressionWrapper, FloatField
 from django.http import JsonResponse
-from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit,UserLoanDetails,UserTransactionDetails
+from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit,UserLoanDetails,UserTransactionDetails,BankWallet
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
-from app.help import kolkata_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number
+from app.help import today_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number, inbox_message
 from django.contrib.auth.models import User
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-
 
 
 
@@ -64,11 +64,19 @@ def user_account(request):
         except Account_Details.DoesNotExist:
             account_data = None
 
-        loan_data = UserLoanDetails.objects.filter(username=profile.username)
+        loan_data = UserLoanDetails.objects.filter(username=profile.username).annotate(
+            total=ExpressionWrapper(
+                F('loan_returing_amt') - F('loan_paid_amt'),
+                output_field=FloatField()
+            )
+        ).order_by('-loan_release_date')
+
         user_messages = User_Inbox.objects.filter(username=profile.username)
+        bank_wallet = BankWallet.get_instance()
+        current_amount = bank_wallet.bank_amount if bank_wallet else 0.0
 
         # Fetching transaction data
-        transactions = UserTransactionDetails.objects.filter(username=request.user)
+        transactions = UserTransactionDetails.objects.filter(username=request.user).order_by('-transaction_date')
         transaction_list = list(transactions.values(
             'loan_id',
             'amount',
@@ -97,7 +105,8 @@ def user_account(request):
             'last_login': account_data.last_login if account_data else None,
             'messages': user_messages,
             'loan_details': loan_data,
-            'transactions': transaction_list  # Include transactions in context
+            'transactions': transaction_list,  # Include transactions in context
+            'bank_amount':current_amount,
         }
     except Account_holders.DoesNotExist:
         profile_data = {}
@@ -141,16 +150,7 @@ def new_account_holder(request):
             user.save()
             profile = Account_holders.objects.create(user=user, username=username, name=name,email=email, gender=gender, mobile=mobile, dob=dob, password=password, address=address)
             profile.save()
-            User_Inbox.objects.create(
-                user=profile,
-                username=username,
-                name=name,
-                email=email,
-                mobile=mobile,
-                subject="Welcome to Our Service",
-                content="Thank you for creating an account with us.",
-                date=timezone.now().date()
-            )
+            inbox_message(profile,"Welcome to Our Service","Thank you for creating an account with us.")
             messages.success(request, 'Your Account Has Been Created successfully!')
         return redirect('signup')
 
@@ -203,18 +203,8 @@ def activate(request):
         )
         account_holder.account_status = 'Active'  # Example: Updating account_status column
         account_holder.save()
-        User_Inbox.objects.create(
-            user=account_holder,
-            username=account_holder.username,
-            name=account_holder.name,
-            email=account_holder.email,
-            mobile=account_holder.mobile,
-            subject="Account Activation",
-            content="Your account has been successfully activated.",
-            date=timezone.now().date()
-        )
-
-        messages.success(request, 'Account Successfully Activated')#
+        inbox_message(account_holder,"Account Activation","Your account has been successfully activated.")
+        messages.success(request, 'Account Successfully Activated')
         return redirect('user_account')
 
     return render(request, 'users_dir/user_account.html')
@@ -234,16 +224,7 @@ def update_profile(request):
         account_holder.address = address
         account_holder.dob = dob
         account_holder.save()
-        User_Inbox.objects.create(
-            user=account_holder,
-            username=account_holder.username,
-            name=account_holder.name,
-            email=account_holder.email,
-            mobile=account_holder.mobile,
-            subject="Profile Update",
-            content="Your profile has been successfully Updated.",
-            date=timezone.now().date()
-        )
+        inbox_message(account_holder,"Profile Update","Your profile has been successfully Updated.")
         messages.success(request, 'Profile Successfully Updated')  #
         return redirect('user_account')
     return render(request, 'users_dir/user_account.html')
@@ -268,12 +249,74 @@ def get_profit_data(request):
 @login_required
 def chart_view(request):
     return render(request, 'users_dir/blog.html')
+@login_required
+def loan_preview_form(request):
+    if request.method == "POST":
+        # Get form inputs
+        loan_amt = float(request.POST.get("loan_amt"))  # Convert to float
 
+        bank_wallet = BankWallet.get_instance()
+
+        if bank_wallet:
+            # Get the current bank amount
+            current_amount = bank_wallet.bank_amount
+
+            if loan_amt>current_amount:
+                messages.error(request, 'Sufficent Balance')
+                return redirect('user_account')
+
+        loan_purpose = request.POST.get("purpose")
+        loan_period = float(request.POST.get("loan_period"))  # Convert to float
+        loan_refrence_code = request.POST.get("reference_no")
+
+        # Calculate due date based on loan period
+        due_date = calculate_due_date(int(loan_period))  # Ensure period is an integer for calculation
+        loan_id = generate_unique_loan_id()
+        # Define interest rate (assuming 2% per month)
+        interest_rate = 0.02
+
+        # Calculate returning amount based on simple interest formula
+        loan_returning_amt = loan_amt * interest_rate * loan_period + loan_amt
+
+        # Fetch account details for the logged-in user
+        account_holder = Account_holders.objects.get(user=request.user)
+        account_details = account_holder.account_details
+
+        loan_data = {
+            "name": account_details.name,
+            "loan_amount":loan_amt,
+            "purpose":loan_purpose,
+            "release_date":today_date(),
+            "close_date":due_date,
+            "intrest_rate":interest_rate,
+            "returning_amount":loan_returning_amt,
+            "refrence_code":loan_refrence_code,
+            "peroid":loan_period
+        }
+        context = {
+            'data': loan_data,
+        }
+
+        return render(request, 'loan_preview.html', context)
+
+    # If not a POST request, render the loan form template
+    return render(request, 'users_dir/user_account.html')
 @login_required
 def loan_form(request):
     if request.method == "POST":
         # Get form inputs
         loan_amt = float(request.POST.get("loan_amt"))  # Convert to float
+
+        bank_wallet = BankWallet.get_instance()
+
+        if bank_wallet:
+            # Get the current bank amount
+            current_amount = bank_wallet.bank_amount
+
+            if loan_amt>current_amount:
+                messages.error(request, 'Sufficent Balance')
+                return redirect('user_account')
+
         loan_purpose = request.POST.get("purpose")
         loan_period = float(request.POST.get("loan_period"))  # Convert to float
         loan_refrence_code = request.POST.get("reference_no")
@@ -301,7 +344,7 @@ def loan_form(request):
             loan_principle_amt=loan_amt,
             loan_purpose=loan_purpose,
             loan_period=loan_period,
-            loan_release_date=kolkata_date(),
+            loan_release_date=today_date(),
             loan_close_date=due_date,
             loan_id=loan_id,  # Generate unique loan ID
             loan_intrest_rate=interest_rate,
@@ -311,20 +354,15 @@ def loan_form(request):
             loan_renewal_times=0,
             loan_refrence_code=loan_refrence_code,
         )
-
+        bank_wallet.bank_amount -= loan_amt
+        bank_wallet.update_date = today_date()
+        bank_wallet.save()
         # Create User_Inbox entry
-        User_Inbox.objects.create(
-            user=account_holder,
-            username=account_holder.username,
-            name=account_holder.name,
-            email=account_holder.email,
-            mobile=account_holder.mobile,
-            subject="Loan Request is Processing",
-            content=f"Your Loan ₹ {loan_amt:.2f} for {loan_purpose} for {loan_period} month(s) applied.\n"
-                    f"You can also check the loan status through Loan Id.\nYour loan ID is: {loan_id}.\n"
-                    "Thank you for visiting our bank.",
-            date=kolkata_date()
-        )
+        content = f"Your Loan ₹ {loan_amt:.2f} for {loan_purpose} for {loan_period} month(s) applied.\n"
+        f"You can also check the loan status through Loan Id.\nYour loan ID is: {loan_id}.\n"
+        "Thank you for visiting our bank."
+        inbox_message(account_holder,"Loan Request is Processing",content)
+
 
         # Display success message and redirect
         messages.success(request, 'Loan Successfully Applied')
@@ -365,6 +403,7 @@ def process_payment(request):
         try:
             account_holder = Account_holders.objects.get(user=request.user)
             loan_details = get_object_or_404(UserLoanDetails, loan_id=loan_id, username=request.user)
+            bank_wallet = BankWallet.get_instance()
 
             total = (loan_details.loan_returing_amt + loan_details.loan_fine_amt) - loan_details.loan_paid_amt
 
@@ -380,7 +419,7 @@ def process_payment(request):
                         email=account_holder.email,
                         mobile=account_holder.mobile,
                         transaction_id=transaction_id,
-                        transaction_date=kolkata_date(),
+                        transaction_date=today_date(),
                         transaction_type="payment",
                         loan_id=loan_id,
                         amount=pay_amt,
@@ -388,16 +427,10 @@ def process_payment(request):
                         payment_status="Completed",
                         description=""
                     )
-                    User_Inbox.objects.create(
-                        user=account_holder,
-                        username=account_holder.username,
-                        name=account_holder.name,
-                        email=account_holder.email,
-                        mobile=account_holder.mobile,
-                        subject="Loan Closed",
-                        content=f"Your loan {pay_amt} was successfully closed.\nThank you for choosing us.",
-                        date=timezone.now().date()
-                    )
+                    inbox_message(account_holder, "Loan Closed",f"Your loan {pay_amt} was successfully closed.\nThank you for choosing us.")
+                    bank_wallet.bank_amount += pay_amt
+                    bank_wallet.update_date = today_date()
+                    bank_wallet.save()
                     messages.success(request, "Loan closed successfully.")
                 elif pay_amt < total:
                     remaining = total - pay_amt
@@ -411,7 +444,7 @@ def process_payment(request):
                         email=account_holder.email,
                         mobile=account_holder.mobile,
                         transaction_id=transaction_id,
-                        transaction_date=kolkata_date(),
+                        transaction_date=today_date(),
                         transaction_type="payment",
                         loan_id=loan_id,
                         amount=pay_amt,
@@ -419,16 +452,10 @@ def process_payment(request):
                         payment_status="Completed",
                         description=""
                     )
-                    User_Inbox.objects.create(
-                        user=account_holder,
-                        username=account_holder.username,
-                        name=account_holder.name,
-                        email=account_holder.email,
-                        mobile=account_holder.mobile,
-                        subject="Loan Paid Transaction",
-                        content=f"Your payment of {pay_amt} was successful. Remaining amount: {remaining}",
-                        date=timezone.now().date()
-                    )
+                    inbox_message(account_holder,"Loan Paid Transaction",f"Your payment of {pay_amt} was successful. Remaining amount: {remaining}")
+                    bank_wallet.bank_amount += pay_amt
+                    bank_wallet.update_date = today_date()
+                    bank_wallet.save()
                     messages.success(request, f"Your payment of {pay_amt} was successful. Remaining amount: {remaining}")
                 else:
                     messages.error(request, "Invalid payment amount.")
@@ -456,7 +483,19 @@ def get_transactions(request):
     ))
     return JsonResponse({'data': transaction_list})
 
-@login_required
-def transaction_history(request):
-    return render(request, 'transaction_history.html')
+
+
+@csrf_exempt
+def delete_loan(request, loan_id):
+    print("helli",loan_id)
+    if request.method == 'DELETE':
+        try:
+            loan = UserLoanDetails.objects.get(loan_id=loan_id)
+            loan.delete()
+            return JsonResponse({'success': True})
+        except UserLoanDetails.DoesNotExist:
+            return JsonResponse({'error': 'Loan not found'}, status=404)
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
 

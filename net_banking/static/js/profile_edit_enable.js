@@ -1,4 +1,4 @@
-document.getElementById('editButton').addEventListener('click', function() {
+document.getElementById('profile_edit_enable').addEventListener('click', function() {
                 // Enable fields for editing
                 document.getElementById('name').readOnly = false;
                 document.getElementById('address').readOnly = false;

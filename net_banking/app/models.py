@@ -126,3 +126,25 @@ class UserTransactionDetails(models.Model):
 
     def __str__(self):
         return f'Transaction {self.transaction_id} by {self.username}'
+
+class BankWallet(models.Model):
+    bank_amount = models.FloatField(default=0.0)
+    update_date = models.DateField(auto_now=True)
+    description = models.TextField(null=True, blank=True)  # Additional details about the transaction
+
+    def save(self, *args, **kwargs):
+        if not self.pk and BankWallet.objects.exists():
+            raise Exception('There can be only one BankWallet instance')
+        return super(BankWallet, self).save(*args, **kwargs)
+
+    @classmethod
+    def get_instance(cls):
+        try:
+            return cls.objects.get()
+        except cls.DoesNotExist:
+            instance = cls()
+            instance.save()
+            return instance
+
+    def __str__(self):
+        return str(self.bank_amount)

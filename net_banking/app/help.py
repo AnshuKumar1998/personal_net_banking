@@ -4,9 +4,9 @@ from datetime import datetime
 import random
 import pytz
 from dateutil.relativedelta import relativedelta
-from .models import UserLoanDetails, Account_Details  # Adjust accordingly based on your project structure
+from .models import UserLoanDetails, Account_Details, User_Inbox
 
-def kolkata_date():
+def today_date():
     kolkata_timezone = pytz.timezone('Asia/Kolkata')
     kolkata_time = datetime.now(kolkata_timezone)
     return kolkata_time.date()
@@ -36,3 +36,15 @@ def generate_unique_account_number():
         # Check if account number already exists in database
         if not Account_Details.objects.filter(account_no=account_number).exists():
             return account_number
+
+def inbox_message(account_holder,subject,content):
+    User_Inbox.objects.create(
+        user=account_holder,
+        username=account_holder.username,
+        name=account_holder.name,
+        email=account_holder.email,
+        mobile=account_holder.mobile,
+        subject=subject,
+        content=content,
+        date=today_date()
+    )

@@ -44,8 +44,9 @@ urlpatterns = [
 
     path('get-transactions/', views.get_transactions, name='get_transactions'),
 
-    path('transaction-history/', views.transaction_history, name='transaction_history'),
+    path('loan_preview_form/', views.loan_preview_form, name='loan_preview_form'),
 
+    path('delete_loan/<int:loan_id>/', views.delete_loan, name='delete_loan'),
 
 
 

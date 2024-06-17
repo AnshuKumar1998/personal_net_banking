@@ -50,25 +50,26 @@
           </tbody>
        </table>
        <!-- Add your payment form or integration here -->
-       <form action="/process_payment/" method="post">
+       <form id="paymentForm" action="/process_payment/" method="post">
           {% csrf_token %}
           <input type="hidden" name="loan_id" value="{{ loan_id }}">
           <div class="form-group">
              <label for="pay_amt"><strong>Payment Amount</strong></label>
-             <input type="number" class="form-control" min="100" name="pay_amt" placeholder="Enter Amount" style="width: 200px;">
+             <input type="number" class="form-control" min="100" name="pay_amt" id="pay_amt" placeholder="Enter Amount" style="width: 200px;" required>
           </div>
-          <br><br>
+          <br>
           <button type="submit" class="btn btn-primary">Proceed to Payment</button>
           <br>
+           <br>
        </form>
     </div>
-    <br>
-    {% if messages %}
-    <script type="text/javascript">
-       {% for message in messages %}
-           alert("{{ message }}");
-       {% endfor %}
-    </script>
-    {% endif %}
+
+   <!-- Toast Message -->
+    <div id="toastMessage" class="toast align-items-center text-white bg-info" role="alert" aria-live="assertive" aria-atomic="true" style="position: fixed; top: 20px; right: 20px;">
+        <div class="toast-body">
+            This time you need to pay the full amount.
+            Remaning Amount can't less than 100 Rs.
+        </div>
+    </div>
 
 {% endblock %}
