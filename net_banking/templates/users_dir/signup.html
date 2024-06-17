@@ -1,136 +1,118 @@
 {% extends 'master.html' %}
-
 {% block body %}
-
-
-
 <!-- inner-banner -->
 <section class="inner-banner" id="home">
-	<div class="inner-layer">
-		<div class="container">
-		</div>
-	</div>
+   <div class="inner-layer">
+      <div class="container">
+      </div>
+   </div>
 </section>
 <!-- //inner-banner -->
-
 <!-- breadcrumb -->
 <div class="breadcrumb-w3pvt">
-	<div class="container">
-	<nav aria-label="breadcrumb">
-		<ol class="breadcrumb">
-			<li class="breadcrumb-item">
-				<a href="{% url 'index' %}">Home</a>
-			</li>
-			<li class="breadcrumb-item">
-				<a href="{% url 'login' %}">Log In</a>
-			</li>
-			<li class="breadcrumb-item" aria-current="page">Create New Account</li>
-		</ol>
-	</nav>
-	</div>
+   <div class="container">
+      <nav aria-label="breadcrumb">
+         <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+               <a href="{% url 'index' %}">Home</a>
+            </li>
+            <li class="breadcrumb-item">
+               <a href="{% url 'login' %}">Log In</a>
+            </li>
+            <li class="breadcrumb-item" aria-current="page">Create New Account</li>
+         </ol>
+      </nav>
+   </div>
 </div>
-
-
 <!-- contact -->
 <section class="contact py-5">
-	<div class="container py-lg-5">
-		<h2 class="heading mb-sm-5 mb-4">Create Your New <strong> Account </strong></h2>
-		<div class="row">
-
-			<div class="col-lg-4 col-md-6 contact-form mt-md-0 mt-sm-5 mt-4">
-					<h4 class="mb-4 w3f_title">Fill Form Carefully</h4>
-				 {% if messages %}
-                        <div class="alert alert-info">
-                            <ul class="mb-0">
-                                {% for message in messages %}
-                                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
-				<form name="signup" id="signup" method="post" action="{% url 'signup' %}" onsubmit="return(validate());" novalidate="novalidate">
-					{% csrf_token %}
-                    <div class="form-group">
-						  <label>Username</label>
-						  <input type="text" class="form-control" placeholder="Enter Username" name="username">
-						</div>
-					<div class="form-group">
-						  <label>Name</label>
-						  <input type="text" class="form-control" placeholder="Enter Name" name="name">
-						</div>
-						<div class="form-group">
-						  <label>Email</label>
-						  <input type="email" class="form-control" placeholder="Enter Email" name="email">
-						</div>
-					    <div class="form-group">
-							<label for="gender">Gender</label>
-							<select class="form-control" id="gender" name="gender" required>
-								<option value="" disabled selected>Select Gender</option>
-								<option value="Male">Male</option>
-								<option value="Female">Female</option>
-								<option value="Other">Other</option>
-							</select>
-						</div>
-
-
-
-                        <div class="form-group">
-                            <label for="mobile">Mobile</label>
-                            <input type="text" class="form-control" id="mobile" name="mobile" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="dob">Date of Birth</label>
-                            <input type="date" class="form-control" id="dob" name="dob" required>
-                        </div>
-						<div class="form-group">
-						  <label>Address</label>
-						  <textarea class="form-control" name="address" placeholder="Enter Your Address"></textarea>
-						</div>
-                        <div class="form-group">
-                            <label for="mobile">Password</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
-                        </div>
-						<button type="submit" class="btn btn-default">Submit</button>
-					</form>
-
-			</div>
-
-			<div class="col-lg-4 col-md-6 contact-address">
-				<h4 class="mb-4 w3f_title">Contact Address</h4>
-				<ul class="list-w3">
-					<li class="d-flex"><span class="fa mt-1 mr-1 fa-map-marker"></span>163 Palihari Gurudih Main Road, <br>Gomia, 829111</li>
-					<li class="my-3"><span class="fa mr-1 fa-phone"></span>+91 8409202262</li>
-					<li class="my-3"><span class="fa mr-1 fa-phone"></span>+91 8409202262</li>
-					<li class=""><span class="fa mr-1 fa-envelope"></span><a href="mailto:anshumk123@gmail.com">anshumk123@gmail.com</a></li>
-				</ul>
-				<h4 class="mt-sm-5 mt-4 mb-3 w3f_title">Follow Us</h4>
-				<p>You Can Follow For Lastest Update</p>
-				<ul class="list-social">
-					<li><a href="#" class="facebook"><span class="fa mr-1 fa-facebook"></span></a></li>
-					<li class="my-3"><a href="#" class="twitter"><span class="fa mr-1 fa-twitter"></span></a></li>
-					<li class="my-3"><a href="#" class="google"><span class="fa mr-1 fa-google-plus"></span></a></li>
-					<li class=""><a href="#" class="linkedin"><span class="fa mr-1 fa-linkedin"></span></a></li>
-				</ul>
-			</div>
-
-			<div class="col-lg-4 contact-map mt-lg-0 mt-sm-5 mt-4">
-				<h4 class="mb-4 w3f_title">Contact Map</h4>
-				<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3023.9503398796587!2d-73.9940307!3d40.719109700000004!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25a27e2f24131%3A0x64ffc98d24069f02!2sCANADA!5e0!3m2!1sen!2sin!4v1441710758555" allowfullscreen=""></iframe>
-			</div>
-
-
-		</div>
-	</div>
+   <div class="container py-lg-5">
+      <h2 class="heading mb-sm-5 mb-4">Create Your New <strong> Account </strong></h2>
+      <div class="row">
+         <div class="col-lg-4 col-md-6 contact-form mt-md-0 mt-sm-5 mt-4">
+            <h4 class="mb-4 w3f_title">Fill Form Carefully</h4>
+            {% if messages %}
+            <div class="alert alert-info">
+               <ul class="mb-0">
+                  {% for message in messages %}
+                  <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                  {% endfor %}
+               </ul>
+            </div>
+            {% endif %}
+            <form name="signup" id="signup" method="post" action="{% url 'signup' %}" onsubmit="return(validate());" novalidate="novalidate">
+               {% csrf_token %}
+               <div class="form-group">
+                  <label>Username</label>
+                  <input type="text" class="form-control" placeholder="Enter Username" name="username">
+               </div>
+               <div class="form-group">
+                  <label>Name</label>
+                  <input type="text" class="form-control" placeholder="Enter Name" name="name">
+               </div>
+               <div class="form-group">
+                  <label>Email</label>
+                  <input type="email" class="form-control" placeholder="Enter Email" name="email">
+               </div>
+               <div class="form-group">
+                  <label for="gender">Gender</label>
+                  <select class="form-control" id="gender" name="gender" required>
+                     <option value="" disabled selected>Select Gender</option>
+                     <option value="Male">Male</option>
+                     <option value="Female">Female</option>
+                     <option value="Other">Other</option>
+                  </select>
+               </div>
+               <div class="form-group">
+                  <label for="mobile">Mobile</label>
+                  <input type="text" class="form-control" id="mobile" name="mobile" required>
+               </div>
+               <div class="form-group">
+                  <label for="dob">Date of Birth</label>
+                  <input type="date" class="form-control" id="dob" name="dob" required>
+               </div>
+               <div class="form-group">
+                  <label>Address</label>
+                  <textarea class="form-control" name="address" placeholder="Enter Your Address"></textarea>
+               </div>
+               <div class="form-group">
+                  <label for="mobile">Password</label>
+                  <input type="password" class="form-control" id="password" name="password" required>
+               </div>
+               <button type="submit" class="btn btn-default">Submit</button>
+            </form>
+         </div>
+         <div class="col-lg-4 col-md-6 contact-address">
+            <h4 class="mb-4 w3f_title">Contact Address</h4>
+            <ul class="list-w3">
+               <li class="d-flex"><span class="fa mt-1 mr-1 fa-map-marker"></span>163 Palihari Gurudih Main Road, <br>Gomia, 829111</li>
+               <li class="my-3"><span class="fa mr-1 fa-phone"></span>+91 8409202262</li>
+               <li class="my-3"><span class="fa mr-1 fa-phone"></span>+91 8409202262</li>
+               <li class=""><span class="fa mr-1 fa-envelope"></span><a href="mailto:anshumk123@gmail.com">anshumk123@gmail.com</a></li>
+            </ul>
+            <h4 class="mt-sm-5 mt-4 mb-3 w3f_title">Follow Us</h4>
+            <p>You Can Follow For Lastest Update</p>
+            <ul class="list-social">
+               <li><a href="#" class="facebook"><span class="fa mr-1 fa-facebook"></span></a></li>
+               <li class="my-3"><a href="#" class="twitter"><span class="fa mr-1 fa-twitter"></span></a></li>
+               <li class="my-3"><a href="#" class="google"><span class="fa mr-1 fa-google-plus"></span></a></li>
+               <li class=""><a href="#" class="linkedin"><span class="fa mr-1 fa-linkedin"></span></a></li>
+            </ul>
+         </div>
+         <div class="col-lg-4 contact-map mt-lg-0 mt-sm-5 mt-4">
+            <h4 class="mb-4 w3f_title">Contact Map</h4>
+            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3023.9503398796587!2d-73.9940307!3d40.719109700000004!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25a27e2f24131%3A0x64ffc98d24069f02!2sCANADA!5e0!3m2!1sen!2sin!4v1441710758555" allowfullscreen=""></iframe>
+         </div>
+      </div>
+   </div>
 </section>
-
-    <!-- Show modal if there are messages -->
-    {% if messages %}
-        <script>
-            $(document).ready(function(){
-                $('#successModal').modal('show');
-            });
-        </script>
-    {% endif %}
+<!-- Show modal if there are messages -->
+{% if messages %}
+<script>
+   $(document).ready(function(){
+       $('#successModal').modal('show');
+   });
+</script>
+{% endif %}
 <!-- //contact -->
-
 {% endblock %}

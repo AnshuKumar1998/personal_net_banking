@@ -1,125 +1,109 @@
 {% extends 'master.html' %}
-
 {% block body %}
-
-
-
 <!-- inner-banner -->
-<section class="inner-banner" id="home">
-	<div class="inner-layer">
-		<div class="container">
-		</div>
+	<section class="inner-banner" id="home">
+	   <div class="inner-layer">
+		  <div class="container">
+		  </div>
+	   </div>
+	</section>
+	<!-- //inner-banner -->
+	<!-- breadcrumb -->
+	<div class="breadcrumb-w3pvt">
+	   <div class="container">
+		  <nav aria-label="breadcrumb">
+			 <ol class="breadcrumb">
+				<li class="breadcrumb-item">
+				   <a href="{% url 'index' %}">Home</a>
+				</li>
+				<li class="breadcrumb-item" aria-current="page">Log In</li>
+			 </ol>
+		  </nav>
+	   </div>
 	</div>
-</section>
-<!-- //inner-banner -->
-
-<!-- breadcrumb -->
-<div class="breadcrumb-w3pvt">
-	<div class="container">
-	<nav aria-label="breadcrumb">
-		<ol class="breadcrumb">
-			<li class="breadcrumb-item">
-				<a href="{% url 'index' %}">Home</a>
-			</li>
-			<li class="breadcrumb-item" aria-current="page">Log In</li>
-		</ol>
-	</nav>
-	</div>
-</div>
-
-
-
-<section class="contact py-5">
-	<div class="container py-lg-5">
-		<h2 class="heading mb-sm-5 mb-4">Log In Your <strong> Account </strong></h2>
-		<div class="row">
-            <div class="col-lg-4 col-md-6 contact-form mt-md-0 mt-sm-5 mt-4">
-				 {% if messages %}
-					<div class="alert alert-danger" role="alert">
-						{% for message in messages %}
-							{{ message }}
-						{% endfor %}
-					</div>
+	<section class="contact py-5">
+	   <div class="container py-lg-5">
+		  <h2 class="heading mb-sm-5 mb-4">Log In Your <strong> Account </strong></h2>
+		  <div class="row">
+			 <div class="col-lg-4 col-md-6 contact-form mt-md-0 mt-sm-5 mt-4">
+				{% if messages %}
+				<div class="alert alert-danger" role="alert">
+				   {% for message in messages %}
+				   {{ message }}
+				   {% endfor %}
+				</div>
 				{% endif %}
 				<form name="login" id="login" method="post" action="" onsubmit="return(validate());" novalidate="novalidate">
-					{% csrf_token %}
-						<div class="form-group">
-						  <label>Username</label>
-						  <input type="text" class="form-control" placeholder="Enter Username" name="username">
-						</div>
-                        <div class="form-group">
-						  <label>Password</label>
-						  <input type="password" class="form-control" placeholder="Enter Password" name="password">
-						</div>
-
-					    <a style="float:right;" data-toggle="modal" data-target="#exampleModal" data-whatever="@mdo" href="">Forget Password ?</a><br>
-
-						<button type="submit" class="btn btn-default">Submit</button>
-					<br><br>
-                         <a href="{% url 'signup' %}"><span style="color:black,margin-left:120px;">Create New Account &nbsp; &rarr;</span></a>
-					</form>
-
-			</div>
-			<div class="col-lg-4 col-md-6 contact-address">
+				   {% csrf_token %}
+				   <div class="form-group">
+					  <label>Username</label>
+					  <input type="text" class="form-control" placeholder="Enter Username" name="username">
+				   </div>
+				   <div class="form-group">
+					  <label>Password</label>
+					  <input type="password" class="form-control" placeholder="Enter Password" name="password">
+				   </div>
+				   <a style="float:right;" data-toggle="modal" data-target="#exampleModal" data-whatever="@mdo" href="">Forget Password ?</a><br>
+				   <button type="submit" class="btn btn-default">Submit</button>
+				   <br><br>
+				   <a href="{% url 'signup' %}"><span style="color:black,margin-left:120px;">Create New Account &nbsp; &rarr;</span></a>
+				</form>
+			 </div>
+			 <div class="col-lg-4 col-md-6 contact-address">
 				<h4 class="mb-4 w3f_title">Contact Address</h4>
 				<ul class="list-w3">
-					<li class="d-flex"><span class="fa mt-1 mr-1 fa-map-marker"></span>163 Palihari Gurudih Main Road, <br>Gomia, 829111</li>
-					<li class="my-3"><span class="fa mr-1 fa-phone"></span>+91 8409202262</li>
-					<li class="my-3"><span class="fa mr-1 fa-phone"></span>+91 8409202262</li>
-					<li class=""><span class="fa mr-1 fa-envelope"></span><a href="mailto:anshumk123@gmail.com">anshumk123@gmail.com</a></li>
+				   <li class="d-flex"><span class="fa mt-1 mr-1 fa-map-marker"></span>163 Palihari Gurudih Main Road, <br>Gomia, 829111</li>
+				   <li class="my-3"><span class="fa mr-1 fa-phone"></span>+91 8409202262</li>
+				   <li class="my-3"><span class="fa mr-1 fa-phone"></span>+91 8409202262</li>
+				   <li class=""><span class="fa mr-1 fa-envelope"></span><a href="mailto:anshumk123@gmail.com">anshumk123@gmail.com</a></li>
 				</ul>
 				<h4 class="mt-sm-5 mt-4 mb-3 w3f_title">Follow Us</h4>
 				<p>You Can Follow For Lastest Update</p>
 				<ul class="list-social">
-					<li><a href="#" class="facebook"><span class="fa mr-1 fa-facebook"></span></a></li>
-					<li class="my-3"><a href="#" class="twitter"><span class="fa mr-1 fa-twitter"></span></a></li>
-					<li class="my-3"><a href="#" class="google"><span class="fa mr-1 fa-google-plus"></span></a></li>
-					<li class=""><a href="#" class="linkedin"><span class="fa mr-1 fa-linkedin"></span></a></li>
+				   <li><a href="#" class="facebook"><span class="fa mr-1 fa-facebook"></span></a></li>
+				   <li class="my-3"><a href="#" class="twitter"><span class="fa mr-1 fa-twitter"></span></a></li>
+				   <li class="my-3"><a href="#" class="google"><span class="fa mr-1 fa-google-plus"></span></a></li>
+				   <li class=""><a href="#" class="linkedin"><span class="fa mr-1 fa-linkedin"></span></a></li>
 				</ul>
-			</div>
-			<div class="col-lg-4 contact-map mt-lg-0 mt-sm-5 mt-4">
+			 </div>
+			 <div class="col-lg-4 contact-map mt-lg-0 mt-sm-5 mt-4">
 				<h4 class="mb-4 w3f_title">Contact Map</h4>
 				<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3023.9503398796587!2d-73.9940307!3d40.719109700000004!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25a27e2f24131%3A0x64ffc98d24069f02!2sCANADA!5e0!3m2!1sen!2sin!4v1441710758555" allowfullscreen=""></iframe>
-			</div>
-
-		</div>
+			 </div>
+		  </div>
+	   </div>
+	</section>
+	<!-- Show modal if there are messages -->
+	{% if messages %}
+	<script>
+	   $(document).ready(function(){
+		   $('#successModal').modal('show');
+	   });
+	</script>
+	{% endif %}
+	<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	   <div class="modal-dialog">
+		  <div class="modal-content">
+			 <div class="modal-header">
+				<h1 class="modal-title fs-5" id="exampleModalLabel">Forget Password</h1>
+			 </div>
+			 <div class="modal-body">
+				<form method="post" action="/forget_password/">
+				   {% csrf_token %}
+				   <div class="mb-3">
+					  <label for="recipient-name" class="col-form-label">Email ID :</label>
+					  <input type="email" class="form-control" name="email" id="email">
+				   </div>
+				   <div class="mb-3">
+					  <label for="recipient-username" class="col-form-label">User name :</label>
+					  <input type="text" class="form-control" name="username" id="username">
+				   </div>
+				   <div class="modal-footer">
+					  <button type="submit" class="btn btn-primary">Reset Confirmation Link</button>
+				   </div>
+				</form>
+			 </div>
+		  </div>
+	   </div>
 	</div>
-</section>
-    <!-- Show modal if there are messages -->
-    {% if messages %}
-        <script>
-            $(document).ready(function(){
-                $('#successModal').modal('show');
-            });
-        </script>
-    {% endif %}
-
-<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h1 class="modal-title fs-5" id="exampleModalLabel">Forget Password</h1>
-      </div>
-      <div class="modal-body">
-        <form method="post" action="/forget_password/">
-			{% csrf_token %}
-          <div class="mb-3">
-            <label for="recipient-name" class="col-form-label">Email ID :</label>
-            <input type="email" class="form-control" name="email" id="email">
-          </div>
-			 <div class="mb-3">
-            <label for="recipient-username" class="col-form-label">User name :</label>
-            <input type="text" class="form-control" name="username" id="username">
-          </div>
-			<div class="modal-footer">
-       			 <button type="submit" class="btn btn-primary">Reset Confirmation Link</button>
-			</div>
-        </form>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-
 {% endblock %}
