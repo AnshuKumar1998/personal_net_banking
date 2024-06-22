@@ -28,32 +28,40 @@
        <table class="table table-bordered">
           <thead>
              <tr>
-                <th>Loan ID</th>
+                <th>Fix Deposite<br> ID</th>
                 <th>Name</th>
-                <th>Loan Amount</th>
-                <th>Return Amount</th>
-                <th>Fine</th>
+                <th>Fix Deposite<br>Amount</th>
+                <th>Rate of<br>Intrest</th>
+                <th>Maturity Month</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Maturity Amount</th>
                 <th>Paid Amount</th>
-                <th>Total</th>
+                <th>Remaining</th>
+                <th>Status</th>
              </tr>
           </thead>
-          <tbody>
+          <tbody>,
              <tr>
-                <td>#{{ loan_id }}</td>
+                <td>#{{ fix_deposite_id }}</td>
                 <td>{{ name }}</td>
-                <td>{{ amount }}</td>
-                <td>{{ return_amount }}</td>
-                <td>{{ fine }}</td>
-                <td>{{ paid }}</td>
-                <td>{{ total }}</td>
+                <td>Rs. {{ fix_deposite_amt }}</td>
+                <td>{{ fix_deposite_rate_of_intrest }}</td>
+                <td>{{ fix_deposite_month }}</td>
+                <td>{{ fix_deposite_st_date }}</td>
+                <td>{{ fix_deposite_end_date }}</td>
+                <td>Rs. {{ fix_deposite_maturity_amt }}</td>
+                <td>Rs. {{ fix_deposite_paid_amt }}</td>
+                <td>Rs. {{ remaining }}</td>
+                <td>{{ fix_deposite_status }}</td>
              </tr>
           </tbody>
        </table>
        <!-- Add your payment form or integration here -->
-        {% if amount != paid %}
-       <form id="paymentForm" action="/process_payment/" method="post">
+       <form id="paymentForm" action="/fixDeposite-paymentProcess/" method="post">
           {% csrf_token %}
-          <input type="hidden" name="loan_id" value="{{ loan_id }}">
+          <input type="hidden" name="id" value="{{ fix_deposite_id }}">
+           {% if fix_deposite_amt != fix_deposite_paid_amt %}
           <div class="form-group">
              <label for="pay_amt"><strong>Payment Amount</strong></label>
              <input type="number" class="form-control" min="100" name="pay_amt" id="pay_amt" placeholder="Enter Amount" style="width: 200px;" required>
@@ -61,9 +69,9 @@
           <br>
           <button type="submit" class="btn btn-primary">Proceed to Payment</button>
           <br>
+           {% endif %}
            <br>
        </form>
-        {% endif %}
     </div>
 
    <!-- Toast Message -->

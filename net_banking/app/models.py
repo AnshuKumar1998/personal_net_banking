@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
+import uuid
 
 
 
@@ -30,9 +31,21 @@ class Account_holders(models.Model):
     account_status = models.CharField(choices=status2,max_length=20,default='Inactive')
     user_status = models.CharField(choices=status,default='Running',max_length=20)
     user_description = models.TextField(default='')
+    photo = models.TextField(blank=True, null=True)
+    profile_photo = models.ImageField(upload_to='upload_profile_photo/', blank=True, null=True)
+    message_seen = models.BooleanField(default=False)
+
 
     def __str__(self):
         return self.email
+
+    def active_loans_count(self):
+        return UserLoanDetails.objects.filter(
+            user__user=self,
+            loan_status__in=['Running']
+        ).count()
+
+    active_loans_count.short_description = 'Active Loans Count'
 
 class Account_Details(models.Model):
     user = models.OneToOneField(Account_holders, on_delete=models.CASCADE, related_name='account_details')
@@ -107,6 +120,7 @@ class UserLoanDetails(models.Model):
         return f"{self.email} - {self.loan_principle_amt} - {self.loan_status}"
 
 
+
 class UserTransactionDetails(models.Model):
     user = models.ForeignKey(Account_holders, on_delete=models.CASCADE, related_name='transactions')
     username = models.CharField(max_length=100)
@@ -148,3 +162,74 @@ class BankWallet(models.Model):
 
     def __str__(self):
         return str(self.bank_amount)
+
+
+
+class FixDepositeList(models.Model):
+    fix_deposite_id = models.CharField(max_length=100, unique=True, editable=False)
+    fix_deposite_name = models.CharField(max_length=100)
+    fix_deposite_rate_of_intrest = models.FloatField()
+    fix_deposite_month = models.FloatField(default=0)
+    fix_deposite_description = models.TextField()
+    fix_deposite_minimum_amt = models.FloatField()
+    fix_deposite_maximum_amt = models.FloatField()
+
+    def save(self, *args, **kwargs):
+        if not self.fix_deposite_id:
+            self.fix_deposite_id = str(uuid.uuid4())
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return str(self.fix_deposite_name)
+
+
+class FixDepositeUsers(models.Model):
+    status = (('Running', 'Running'),('Processing', 'Processing'), ('Hold', 'Hold'),('Closed', 'Closed'), ('Cancel', 'Cancel'))
+    user = models.ForeignKey(Account_holders, on_delete=models.CASCADE, related_name='fixDeposite')
+    username = models.CharField(max_length=100)
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    mobile = models.CharField(max_length=15)
+    fix_deposite_id = models.CharField(max_length=100)
+    fix_deposite_name = models.CharField(max_length=100)
+    fix_deposite_rate_of_intrest = models.FloatField()
+    fix_deposite_month = models.FloatField(default=0)
+    fix_deposite_paid_amt = models.FloatField(default=0.0)
+    fix_deposite_amt = models.FloatField()
+    fix_deposite_maturity_amt = models.FloatField()
+    fix_deposite_st_date = models.DateField()
+    fix_deposite_end_date = models.DateField()
+    fix_deposite_status = models.CharField(max_length=100, choices=status)
+    fix_deposite_description = models.CharField(max_length=100)
+
+    class Meta:
+        ordering = ['-fix_deposite_st_date']  # Orders transactions by date, most recent first
+
+    def __str__(self):
+        return str(self.fix_deposite_name)
+
+
+class Post(models.Model):
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    date = models.DateField(auto_now_add=True)
+    likes = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return self.title
+
+
+class AdminMessage(models.Model):
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"Admin Message ({self.created_at})"
+
+
+
+
+
+

@@ -3,9 +3,9 @@ from django.contrib.auth import authenticate, login as auth_login, logout as aut
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
 from django.db import transaction
-from django.db.models import F, ExpressionWrapper, FloatField
+from django.db.models import F, ExpressionWrapper, FloatField, Q
 from django.http import JsonResponse
-from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit,UserLoanDetails,UserTransactionDetails,BankWallet
+from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit,UserLoanDetails,UserTransactionDetails,BankWallet,FixDepositeList,FixDepositeUsers,Post,AdminMessage
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
@@ -13,6 +13,10 @@ from app.help import today_date, generate_unique_loan_id, calculate_due_date, ge
 from django.contrib.auth.models import User
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+import logging
+from django.core.paginator import Paginator
+
+logger = logging.getLogger(__name__)
 
 
 
@@ -20,7 +24,16 @@ def master(request):
     return render(request,'master.html')
 
 def index(request):
-    return render(request,'index.html')
+    user_count = Account_holders.objects.count()
+    bank_wallet = BankWallet.get_instance()
+    current_amount = bank_wallet.bank_amount if bank_wallet else 0.0
+    account_count = Account_Details.objects.count()
+    context = {
+        'user_count': user_count,
+        'current_deposite':current_amount,
+        'account_count':account_count
+    }
+    return render(request,'index.html',context)
 
 def blog(request):
     return render(request,'users_dir/blog.html')
@@ -71,11 +84,15 @@ def user_account(request):
             )
         ).order_by('-loan_release_date')
 
-        user_messages = User_Inbox.objects.filter(username=profile.username)
+        user_messages = User_Inbox.objects.filter(username=profile.username).order_by('-date')
+
         bank_wallet = BankWallet.get_instance()
         current_amount = bank_wallet.bank_amount if bank_wallet else 0.0
 
-        # Fetching transaction data
+        now = timezone.now()
+        active_admin_message = "true"
+
+
         transactions = UserTransactionDetails.objects.filter(username=request.user).order_by('-transaction_date')
         transaction_list = list(transactions.values(
             'loan_id',
@@ -105,9 +122,11 @@ def user_account(request):
             'last_login': account_data.last_login if account_data else None,
             'messages': user_messages,
             'loan_details': loan_data,
-            'transactions': transaction_list,  # Include transactions in context
-            'bank_amount':current_amount,
+            'transactions': transaction_list,
+            'bank_amount': current_amount,
+            'show_message': active_admin_message,
         }
+
     except Account_holders.DoesNotExist:
         profile_data = {}
         messages.error(request, 'User account not found.')
@@ -117,6 +136,8 @@ def user_account(request):
     }
 
     return render(request, 'users_dir/user_account.html', context)
+
+
 
 def logout(request):
     auth_logout(request)
@@ -138,6 +159,7 @@ def new_account_holder(request):
         dob = request.POST.get('dob')
         address = request.POST.get('address')
         password = request.POST.get('password')
+       # profile_photo = request.FILES.get('profile_photo')
 
         if User.objects.filter(email=email).exists():
             messages.error(request, 'Error: This email is already registered.')
@@ -146,16 +168,28 @@ def new_account_holder(request):
         elif User.objects.filter(username=username).exists():
             messages.error(request, 'Error: This username is already registered.')
         else:
+            # Convert the image file to base64
+
             user = User(username=username, email=email, password=make_password(password))
             user.save()
-            profile = Account_holders.objects.create(user=user, username=username, name=name,email=email, gender=gender, mobile=mobile, dob=dob, password=password, address=address)
+            profile = Account_holders.objects.create(
+                user=user,
+                username=username,
+                name=name,
+                email=email,
+                gender=gender,
+                mobile=mobile,
+                dob=dob,
+                password=password,
+                address=address,
+
+            )
             profile.save()
-            inbox_message(profile,"Welcome to Our Service","Thank you for creating an account with us.")
+            inbox_message(profile, "Welcome to Our Service", "Thank you for creating an account with us.")
             messages.success(request, 'Your Account Has Been Created successfully!')
-        return redirect('signup')
+            return redirect('signup')
 
     return render(request, 'users_dir/signup.html')
-
 
 @login_required
 def activate(request):
@@ -487,7 +521,6 @@ def get_transactions(request):
 
 @csrf_exempt
 def delete_loan(request, loan_id):
-    print("helli",loan_id)
     if request.method == 'DELETE':
         try:
             loan = UserLoanDetails.objects.get(loan_id=loan_id)
@@ -497,5 +530,320 @@ def delete_loan(request, loan_id):
             return JsonResponse({'error': 'Loan not found'}, status=404)
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
+def fix_deposit_list(request):
+    fix_deposits = FixDepositeList.objects.all()
+
+    if request.user.is_authenticated:
+        profile = Account_holders.objects.get(username=request.user)
+        name=profile.name
+    else:
+        name="none"
+
+    context = {
+        'profile':name,
+        'fix_deposits': fix_deposits
+
+    }
+    return render(request, 'service_dir/fix_deposit_list.html',context)
 
 
+def service(request):
+    return render(request, 'service_dir/service.html')
+
+
+def fix_deposite_details(request, fix_deposite_id):
+
+    fix_deposit = get_object_or_404(FixDepositeList, fix_deposite_id=fix_deposite_id)
+
+    if request.user.is_authenticated:
+        profile = Account_holders.objects.get(username=request.user)
+        name = profile.name
+        email = profile.email
+        mobile = profile.mobile
+    else:
+        name = None
+        email = None
+        mobile = None
+
+    per_month = fix_deposit.fix_deposite_maximum_amt / fix_deposit.fix_deposite_month
+    mataruity_amt = fix_deposit.fix_deposite_maximum_amt * fix_deposit.fix_deposite_rate_of_intrest * fix_deposit.fix_deposite_month
+
+    context = {
+        'name': name,
+        'email': email,
+        'mobile': mobile,
+        'deposite_id': fix_deposit.fix_deposite_id,
+        'deposite_name': fix_deposit.fix_deposite_name,
+        'deposite_amount': fix_deposit.fix_deposite_maximum_amt,
+        'rate': fix_deposit.fix_deposite_rate_of_intrest,
+        'month': per_month,
+        'month_word':fix_deposit.fix_deposite_month,
+        'mataruity_amt': mataruity_amt,
+        'mataruity_st_date': timezone.now().date(),
+        'mataruity_end_date': (timezone.now() + timezone.timedelta(days=fix_deposit.fix_deposite_month * 30)).date(),
+    }
+
+    return render(request, 'service_dir/fix_deposite_details.html', context)
+
+
+@login_required
+def process_payment(request):
+    if request.method == 'POST':
+        user = request.user
+        profile = Account_holders.objects.get(username=user)
+        bank_wallet = BankWallet.get_instance()
+
+        fix_deposite_id = request.POST.get('fix_deposite_id', '')
+
+        if not fix_deposite_id:
+            return JsonResponse({'success': False, 'error': 'Fix deposit ID is missing'})
+
+        # Debugging: Print out the values received in the POST request
+        logger.debug("POST data: %s", request.POST)
+
+        fix_deposite_amt = request.POST.get('fix_deposite_amt', '')
+        fix_deposite_maturity_amt = request.POST.get('fix_deposite_maturity_amt', '')
+
+        # Handle empty fields gracefully
+        if not fix_deposite_amt or not fix_deposite_maturity_amt:
+            return JsonResponse({'success': False, 'error': 'Amount fields are missing'})
+
+        try:
+            fix_deposite_amt = float(fix_deposite_amt)
+            fix_deposite_maturity_amt = float(fix_deposite_maturity_amt)
+        except ValueError:
+            logger.error("Invalid value received for amount fields")
+            return JsonResponse({'success': False, 'error': 'Invalid amount values'})
+
+        transaction_id = 000  # Replace with actual logic for generating transaction ID
+        UserTransactionDetails.objects.create(
+            user=profile,
+            username=profile.username,
+            name=profile.name,
+            email=profile.email,
+            mobile=profile.mobile,
+            transaction_id=transaction_id,
+            transaction_date=today_date(),
+            transaction_type="payment",
+            loan_id=fix_deposite_id,
+            amount=float(fix_deposite_amt),
+            payment_method="Credit Card",
+            payment_status="Completed",
+            description=""
+        )
+        bank_wallet.bank_amount += float(fix_deposite_amt)
+        bank_wallet.update_date = today_date()
+        bank_wallet.save()
+
+
+        fix_deposite_user = FixDepositeUsers(
+            user=profile,
+            username=profile.username,
+            name=profile.name,
+            email=profile.email,
+            mobile=profile.mobile,
+            fix_deposite_id=fix_deposite_id,
+            fix_deposite_name=request.POST['fix_deposite_name'],
+            fix_deposite_rate_of_intrest=float(request.POST['fix_deposite_rate_of_intrest']),
+            fix_deposite_month=float(request.POST['fix_deposite_month']),
+            fix_deposite_amt=fix_deposite_amt,
+            fix_deposite_maturity_amt=fix_deposite_maturity_amt,
+            fix_deposite_st_date=request.POST['fix_deposite_st_date'],
+            fix_deposite_end_date=request.POST['fix_deposite_end_date'],
+            fix_deposite_status='Processing',
+            fix_deposite_description=request.POST['fix_deposite_description'],
+        )
+        fix_deposite_user.save()
+        inbox_message(profile, "Fix Deposite", "Fix Deposite is successfully Activated")
+
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
+def post_list(request):
+    posts = Post.objects.all().order_by('-date')
+    paginator = Paginator(posts, 5)  # Show 5 posts per page.
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'post_list.html', {'page_obj': page_obj})
+
+@csrf_exempt
+def like_post(request, post_id):
+    if request.method == 'POST':
+        post = get_object_or_404(Post, id=post_id)
+        post.likes += 1
+        post.save()
+        return JsonResponse({'likes': post.likes})
+
+
+@login_required
+def user_setting(request):
+    return render(request,'user_setting_dir/user_setting.html')
+
+@login_required
+def user_activity(request):
+    user = request.user
+    profile = Account_holders.objects.get(username=user)
+    statuses = ['Running', 'Processing', 'Hold']
+    loans = UserLoanDetails.objects.filter(username=profile.username).filter(Q(loan_status='Running') | Q(loan_status='Processing') | Q(loan_status='Hold'))
+    fix_deposites = FixDepositeUsers.objects.filter(username=profile.username)
+
+    user_profile = {
+        "name":profile.name
+    }
+    context = {
+        'profile': user_profile,
+        "loans":loans,
+        "fix_deposites":fix_deposites,
+
+    }
+    return render(request, 'user_setting_dir/user_activity.html', context)
+
+
+
+@login_required
+def hide_message(request):
+    if request.method == 'POST':
+        try:
+            profile = Account_holders.objects.get(user=request.user)
+            profile.message_seen = True
+            profile.save()
+            return JsonResponse({'status': 'ok'})
+        except Account_holders.DoesNotExist:
+            return JsonResponse({'status': 'error'})
+
+
+
+@login_required
+@csrf_exempt
+def delete_account(request):
+    if request.method == 'POST':
+        username = request.user.username
+
+        # Check if there are running or processing loans or fixed deposits
+        running_loans = UserLoanDetails.objects.filter(username=username, loan_status__in=['Running', 'Processing'])
+        running_deposits = FixDepositeUsers.objects.filter(username=username, fix_deposite_status='Running')
+
+        if running_loans.exists() or running_deposits.exists():
+            return JsonResponse({'status': 'error', 'message': "You can't delete your account with running or processing loans/deposits."})
+
+        # Delete User Inbox data
+        User_Inbox.objects.filter(username=username).delete()
+
+        try:
+            # Delete account details if they exist
+            account_details = Account_Details.objects.get(username=username)
+            account_details.delete()
+        except Account_Details.DoesNotExist:
+            pass
+
+        # Delete account holder details
+        account_holder = Account_holders.objects.get(username=username)
+        account_holder.delete()
+
+        # Delete Django User model
+        try:
+            user = User.objects.get(username=username)
+            user.delete()
+        except User.DoesNotExist:
+            pass
+
+        return JsonResponse({'status': 'success'})
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
+
+
+@login_required
+def fix_deposite_payment_details(request):
+    fixDeposite_id = request.GET.get('id')
+    context = {}
+
+    if not fixDeposite_id:
+        messages.error(request, "Invalid fixed deposit ID.")
+        return redirect('user_activity')  # Redirect to an appropriate page
+
+
+
+    try:
+        fixDeposite_user = FixDepositeUsers.objects.get(id=fixDeposite_id, username=request.user)
+
+        if fixDeposite_user.fix_deposite_amt < fixDeposite_user.fix_deposite_paid_amt:
+            messages.error(request, "Invalid Amount.")
+            return redirect('user_activity')
+        
+        remain = fixDeposite_user.fix_deposite_amt - fixDeposite_user.fix_deposite_paid_amt
+
+        context = {
+            'fix_deposite_id': fixDeposite_user.id,
+            'name': fixDeposite_user.name,
+            'fix_deposite_amt': fixDeposite_user.fix_deposite_amt,
+            'fix_deposite_rate_of_intrest': fixDeposite_user.fix_deposite_rate_of_intrest,
+            'fix_deposite_month': fixDeposite_user.fix_deposite_month,
+            'fix_deposite_st_date': fixDeposite_user.fix_deposite_st_date,
+            'fix_deposite_end_date': fixDeposite_user.fix_deposite_end_date,
+            'fix_deposite_maturity_amt': fixDeposite_user.fix_deposite_maturity_amt,
+            'fix_deposite_paid_amt': fixDeposite_user.fix_deposite_paid_amt,
+            'fix_deposite_status': fixDeposite_user.fix_deposite_status,
+            'remaining': remain
+        }
+    except FixDepositeUsers.DoesNotExist:
+        messages.error(request, "You do not have permission to view this fixed deposit.")
+        return redirect('user_activity')  # Redirect to an appropriate page
+
+    return render(request, 'service_dir/fix_deposit_payment.html', context)
+
+
+@login_required
+def fix_deposite_payment_process(request):
+    if request.method == 'POST':
+        user = request.user
+        fix_deposite_id = request.POST.get('id')
+        paid_amt = request.POST.get('pay_amt')
+
+        profile = Account_holders.objects.get(username=user)
+        bank_wallet = BankWallet.get_instance()
+
+
+        if not fix_deposite_id:
+            return JsonResponse({'success': False, 'error': 'Fix deposit ID is missing'})
+
+        # Debugging: Print out the values received in the POST request
+        logger.debug("POST data: %s", request.POST)
+
+        try:
+            fix_deposite_paid_amt = float(paid_amt)
+        except ValueError:
+            logger.error("Invalid value received for amount fields")
+            return JsonResponse({'success': False, 'error': 'Invalid amount values'})
+
+        transaction_id = 000  # Replace with actual logic for generating transaction ID
+        UserTransactionDetails.objects.create(
+            user=profile,
+            username=profile.username,
+            name=profile.name,
+            email=profile.email,
+            mobile=profile.mobile,
+            transaction_id=transaction_id,
+            transaction_date=today_date(),
+            transaction_type="payment",
+            loan_id=fix_deposite_id,
+            amount=float(paid_amt),
+            payment_method="Credit Card",
+            payment_status="Completed",
+            description=""
+        )
+        bank_wallet.bank_amount += float(paid_amt)
+        bank_wallet.update_date = today_date()
+        bank_wallet.save()
+
+        fix_deposite = get_object_or_404(FixDepositeUsers, id=fix_deposite_id, username=request.user)
+        fix_deposite.fix_deposite_paid_amt += float(paid_amt)
+        fix_deposite.save()
+
+
+        inbox_message(profile, "Fix Deposite", "Fix Deposite Amount paid")
+
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})

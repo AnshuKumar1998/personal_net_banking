@@ -51,8 +51,8 @@
                <ul class="menu ml-auto mt-1">
                   <li class="active"><a href="index.html">Home</a></li>
                   <li class=""><a href="about.html">About</a></li>
-                  <li class=""><a href="services.html">Services</a></li>
-                  <li class=""><a href="blog.html">Blog</a></li>
+                  <li class=""><a href="/service/">Services</a></li>
+                  <li class=""><a href="/post_list/">News</a></li>
                   <li class=""><a href="{% url 'contact_us' %}">Contact</a></li>
                   {% if user.is_authenticated %}
                   <li><a href="/user_account/"><i class=""></i>Account</a></li>
@@ -85,8 +85,8 @@
                                  Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubiliacurae, Curabitur quis luctus lectus.
                                  Morbi at dui nisl.
                               </p>
-                              <a href="services.html" class="btn btn-banner my-3 mr-2">Read More</a>
-                              <a href="contact.html" class="btn btn-banner1 my-3">Get Started</a>
+                              <a href="/service/" class="btn btn-banner my-3 mr-2">Read More</a>
+                              <a href="{% url 'login' %}" class="btn btn-banner1 my-3">Get Started</a>
                            </div>
                         </li>
                         <li>
@@ -298,29 +298,28 @@
                      <div class="row">
                         <div class="col-sm-3 col-6 w3layouts_stats_left w3_counter_grid">
                            <span class="fa fa-credit-card"></span>
-                           <p class="counter">1568</p>
-                           <p class="para-text-w3ls">Issued Cards</p>
+                           <p class="counter">{{ account_count }}</p>
+                           <p class="para-text-w3ls">Account Holders</p>
                         </div>
                         <div class="col-sm-3 col-6 w3layouts_stats_left w3_counter_grid2">
                            <span class="fa fa-users"></span>
-                           <p class="counter">1900</p>
+                           <p class="counter">{{ user_count }}</p>
                            <p class="para-text-w3ls">Customers</p>
                         </div>
-                        <div class="col-sm-3 col-6 w3layouts_stats_left w3_counter_grid1 mt-sm-0 mt-4">
-                           <span class="fa fa-dollar"></span>
-                           <p class="counter">1422</p>
-                           <p class="para-text-w3ls">Deposits</p>
-                        </div>
+
                         <div class="col-sm-3 col-6 w3layouts_stats_left w3_counter_grid1 mt-sm-0 mt-4">
                            <span class="fa fa-users"></span>
                            <p class="counter">400</p>
                            <p class="para-text-w3ls">Employees</p>
                         </div>
+                        <div class="col-sm-3 col-6 w3layouts_stats_left w3_counter_grid1 mt-sm-0 mt-4">
+                           <span class="fa">&#8377;</span>
+                           <p class="counter">{{ current_deposite }}</p>
+                           <p class="para-text-w3ls">Deposits</p>
+                        </div>
                      </div>
                   </div>
-                  <div class="col-lg-4 text-lg-left text-stat text-center mt-lg-0 mt-5">
-                     <h4 class=""> Vestibulum ante ipsum int primis faucibus orci luctus et ultrices posue elit</h4>
-                  </div>
+
                </div>
             </div>
          </div>

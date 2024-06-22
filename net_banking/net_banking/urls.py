@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from .import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 
 
@@ -68,8 +70,33 @@ urlpatterns = [
 
     path('chart/', views.chart_view, name='chart_view'),
 
-    path('loan_form/', views.loan_form, name="loan_form")
+    path('loan_form/', views.loan_form, name="loan_form"),
+
+    path('fix_deposit_list/', views.fix_deposit_list, name="fix_deposit_list"),
+
+    path('fix-deposite-details/<str:fix_deposite_id>/', views.fix_deposite_details, name='fix_deposite_details'),
+
+    path('service/',views.service,name="service"),
+
+    path('process-payment/', views.process_payment, name='process_payment'),
+
+    path('post_list/', views.post_list, name='post_list'),
+
+    path('like/<int:post_id>/', views.like_post, name='like_post'),
+
+    path('user_setting/', views.user_setting, name='user_setting'),
+
+    path('activity/', views.user_activity, name='activity'),  # New URL pattern
+
+    path('hide_message/', views.hide_message, name='hide_message'),
+
+    path('delete_account/', views.delete_account, name='delete_account'),
+
+    path('fix-deposite-payment/', views.fix_deposite_payment_details, name='fix-deposite-payment'),
+
+    path('fixDeposite-paymentProcess/', views.fix_deposite_payment_process, name='fixDeposite-paymentProcess'),
+
 
     #------------ End User Account URL --------------------------------------------------------
-]
+]+ static(settings.MEDIA_URL,document_root = settings.MEDIA_ROOT)
 

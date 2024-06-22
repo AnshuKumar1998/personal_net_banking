@@ -1,0 +1,55 @@
+{% extends 'master.html' %}
+{% block body %}
+    <!-- inner-banner -->
+    <section class="inner-banner" id="home">
+        <div class="inner-layer">
+            <div class="container">
+            </div>
+        </div>
+    </section>
+    <!-- //inner-banner -->
+    <!-- breadcrumb -->
+    <div class="breadcrumb-w3pvt">
+        <div class="container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'index' %}">Home</a>
+                    </li>
+                    {% if user.is_authenticated %}
+                        <li class="breadcrumb-item" aria-current="page">Log In</li>
+                        <li class="breadcrumb-item" aria-current="page">Hi, {{ profile }}</li>
+                        <li class="breadcrumb-item" aria-current="page">Fix Deposite</li>
+                    {% else %}
+                    <li class="breadcrumb-item"  aria-current="page"><a href='/service/'>Services</a></li>
+                        <li class="breadcrumb-item" aria-current="page">Fix Deposite</li>
+                    {% endif %}
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <section class="other_services pt-5">
+        <div class="container py-md-5 py-3">
+            <h2 class="heading mb-5">A wide range<strong> of Banking services </strong></h2>
+            <div class="row">
+                {% for fix_deposit in fix_deposits %}
+                    <div class="col-lg-4 col-sm-6 mb-5">
+                        <div class="grid">
+                           <!-- <img src="/static/images/banner2.jpg" alt="" class="img-fluid" /> -->
+                            <div class="info p-4">
+                                <h4 class="">{{ fix_deposit.fix_deposite_name|upper }}</h4>
+                                <p class="my-3">Interest Rate: {{ fix_deposit.fix_deposite_rate_of_intrest }}%</p>
+                                <p class="my-3">Minimum Amount: Rs. {{ fix_deposit.fix_deposite_minimum_amt }}</p>
+                                <p class="my-3">Maximum Amount: Rs. {{ fix_deposit.fix_deposite_maximum_amt }}</p>
+                                <p class="my-3">{{ fix_deposit.fix_deposite_description }}</p>
+                                <a href="{% url 'fix_deposite_details' fix_deposit.fix_deposite_id %}">Activate</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    <!-- //other services -->
+{% endblock %}

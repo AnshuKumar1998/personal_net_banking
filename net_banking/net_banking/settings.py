@@ -146,3 +146,6 @@ DEFAULT_FROM_EMAIL = 'anshukr5691@gmail.com'
 INDEX_REDIRECT_URL = 'index'
 
 LOGIN_URL = '/login/'
+
+APPEND_SLASH = False
+

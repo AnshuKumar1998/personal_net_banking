@@ -1,0 +1,77 @@
+{% extends 'master.html' %}
+{% load static %}
+{% block body %}
+<!-- inner-banner -->
+<section class="inner-banner" id="home">
+   <div class="inner-layer">
+      <div class="container">
+      </div>
+   </div>
+</section>
+<!-- end inner-banner -->
+
+<!-- breadcrumb -->
+<div class="breadcrumb-w3pvt">
+   <div class="container">
+      <nav aria-label="breadcrumb">
+         <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+               <a href="{% url 'index' %}">Home</a>
+            </li>
+            <li class="breadcrumb-item" aria-current="page">Log In</li>
+            <li class="breadcrumb-item" aria-current="page">Hi, {{ profile.name }}</li>
+         </ol>
+      </nav>
+   </div>
+</div>
+
+<div class="container mt-5">
+    <h1 class="mb-4">User Dashboard</h1>
+    <div class="row">
+        {% if fix_deposites %}
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    Fixed Deposits
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% for deposit in fix_deposites %}
+                        <li class="list-group-item">
+                            <a href="{% url 'fix-deposite-payment' %}?id={{ deposit.id }}">
+                                <strong>{{ deposit.fix_deposite_name }}</strong>: ${{ deposit.fix_deposite_maturity_amt }} (Maturity: {{ deposit.fix_deposite_end_date }})
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% if loans %}
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    Loans
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% for loan in loans %}
+                        <li class="list-group-item">
+                             <a href="{% url 'payment_page' %}?loan_id={{ loan.loan_id }}">
+                                 <strong>{{ loan.loan_purpose }}</strong>: ${{ loan.loan_principle_amt }} (Due: {{ loan.loan_close_date }})
+                             </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+{% endblock %}

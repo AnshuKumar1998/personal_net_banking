@@ -32,18 +32,25 @@
       <!-- Left Column -->
       <div class="col-md-3">
          <!-- Profile Section -->
-         <div class="profile text-left mb-4">
-            <img src="/static/images/sejal.jpg" alt="Profile Image" class="img-fluid rounded-circle mb-3">
+        <div class="profile text-left mb-4">
+                {% if profile_data.profile_photo %}
+                    <img src="{{ profile_data.profile_photo }}" alt="" class="profile-image" id="profileImage">
+
+                {% else %}
+                    <img src="/static/images/sejal.jpg" alt="" class="profile-image" id="profileImage">
+                {% endif %}
             <h4>Profile</h4>
             <ul>
-               <li><strong>Username : </strong> {{ profile_data.username }}</li>
-               <li><strong>Name : </strong> {{ profile_data.name }}</li>
-               <li><strong>Gender : </strong> {{ profile_data.gender }}</li>
-               <li><strong>Date of Birth : </strong> {{ profile_data.dob }}</li>
-               <li><strong>Mobile No. </strong> {{ profile_data.mobile }}</li>
-               <li><strong>Email : </strong> {{ profile_data.email }}</li>
+                <li><strong>Username:</strong> {{ profile_data.username }}</li>
+                <li><strong>Name:</strong> {{ profile_data.name }}</li>
+                <li><strong>Gender:</strong> {{ profile_data.gender }}</li>
+                <li><strong>Date of Birth:</strong> {{ profile_data.dob }}</li>
+                <li><strong>Mobile No.:</strong> {{ profile_data.mobile }}</li>
+                <li><strong>Email:</strong> {{ profile_data.email }}</li>
             </ul>
-         </div>
+        <!-- Ensure CSRF token is present -->
+            {% csrf_token %}
+        </div>
          <!-- end Profile Section -->
          <!-- loan Section -->
          <div class="tags-widget mt-4">
@@ -73,34 +80,34 @@
    <div class="tags-widget mt-4">
       <h4>Archives</h4>
       <ul>
-         <li><a href="#">Loan Details</a></li>
-         <li><a href="#">Fix Deposite</a></li>
+         <li><a href="/activity/">Activity</a></li>
+         <li><a href="/fix_deposit_list/">Fix Deposite</a></li>
          <li><a href="#">Annocuments</a></li>
          <li><a href="#">Complaint</a></li>
-         <li><a href="#">Settings</a></li>
+         <li><a href="/user_setting/">Settings</a></li>
       </ul>
    </div>
    <!-- Inbox Tabs -->
    <ul class="nav nav-tabs" id="myTab" role="tablist">
       <li class="nav-item">
-         <a class="nav-link active" id="online-tab" data-toggle="tab" href="#online" role="tab" aria-controls="online" aria-selected="true">Online</a>
+         <a class="nav-link active" id="online-tab" data-toggle="tab" href="#online" role="tab" aria-controls="online" aria-selected="false">Online</a>
       </li>
       <li class="nav-item">
-         <a class="nav-link" id="inbox-tab" data-toggle="tab" href="#inbox" role="tab" aria-controls="inbox" aria-selected="false">Inbox</a>
+         <a class="nav-link" id="inbox-tab" data-toggle="tab" href="#inbox" role="tab" aria-controls="inbox" aria-selected="true">Inbox</a>
       </li>
       <li class="nav-item">
          <a class="nav-link" id="chat-tab" data-toggle="tab" href="#chat" role="tab" aria-controls="chat" aria-selected="false"><span class="fa fa-comment"></span></a>
       </li>
    </ul>
    <div class="tab-content" id="myTabContent">
-      <div class="tab-pane fade show active" id="online" role="tabpanel" aria-labelledby="online-tab">
+      <div class="tab-pane fade " id="online" role="tabpanel" aria-labelledby="online-tab">
          <div class="user-card mt-3">
             <div class="user-info">
                <h6>Anshu Kumar</h6>
             </div>
          </div>
       </div>
-      <div class="tab-pane fade" id="inbox" role="tabpanel" aria-labelledby="inbox-tab">
+      <div class="tab-pane fade show active" id="inbox" role="tabpanel" aria-labelledby="inbox-tab">
          <div class="scrollable mt-3">
             {% for message in profile_data.messages %}
             <div class="message {% if not message.read %}unread{% endif %}"
@@ -152,7 +159,7 @@
 <div class="col-md-9">
    <!-- Profit Chart -->
    <div class="profit-chart">
-      <h2 class="text-center text-white mb-4">Profit Chart</h2>
+      <h2 class="text-center text-black mb-4">Profit Chart</h2>
       <div class="chart-container bg-dark p-4 rounded">
          <canvas id="profitChart" width="400" height="200"></canvas>
       </div>
@@ -460,14 +467,75 @@
    </div>
 </div>
 {% endif %}
+
+<div id="popupMessage" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="popupMessageLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="popupMessageLabel">Admin Message</h5>
+            </div>
+            <div class="modal-body">
+                <p>{{ admin_message }}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="okButton">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
    $(document).ready(function() {
        {% if messages %}
            $('#successModal').modal('show');
        {% endif %}
    });
+        //delete message
+       // Function to show overlay and popup message
+    function showPopupMessage() {
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById('popupMessage').style.display = 'block';
+    }
+
+    // Function to hide overlay and popup message
+    function hidePopupMessage() {
+        document.getElementById('overlay').style.display = 'none';
+        document.getElementById('popupMessage').style.display = 'none';
+    }
+
+    // Event listener for OK button in popup message
+    document.getElementById('okButton').addEventListener('click', function() {
+        // Perform actions when OK button is clicked
+        hidePopupMessage(); // Hide popup message and overlay
+        // Optionally, you can perform additional actions here after clicking OK
+    });
+
+    // Automatically show the popup message when needed
+
+   function showPopupMessage() {
+        // Define your popup message logic here
+        alert('Popup message shown!');
+    }
+
+     window.onload = function() {
+        console.log("hello");
+
+        // Check the value of show_message directly
+        console.log("show_message:", "{{ show_message }}");
+
+        // Ensure proper comparison with boolean value in if statement
+        {% if show_message == "true" %}
+        console.log("done");
+        showPopupMessage();
+        {% endif %}
+    };
+
+
+
 </script>
 
-<!-- Add this script at the bottom of your template -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
 {% endblock %}

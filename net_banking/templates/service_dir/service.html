@@ -1,0 +1,186 @@
+{% extends 'master.html' %}
+{% block body %}
+
+<section class="inner-banner" id="home">
+	<div class="inner-layer">
+		<div class="container">
+		</div>
+	</div>
+</section>
+<!-- //inner-banner -->
+
+<!-- breadcrumb -->
+<div class="breadcrumb-w3pvt">
+	<div class="container">
+	<nav aria-label="breadcrumb">
+		<ol class="breadcrumb">
+			<li class="breadcrumb-item">
+				<a href="index.html">Home</a>
+			</li>
+			 {% if user.is_authenticated %}
+                        <li class="breadcrumb-item" aria-current="page">Log In</li>
+                        <li class="breadcrumb-item" aria-current="page">Services</li>
+                    {% else %}
+                        <li class="breadcrumb-item" aria-current="page">Services</li>
+                    {% endif %}
+		</ol>
+	</nav>
+	</div>
+</div>
+<!-- //breadcrumb -->
+
+<!-- services -->
+<section class="services py-5">
+	<div class="container py-md-5 py-sm-3">
+		<h3 class="heading mb-5">Services <strong> we provide </strong></h3>
+		<div class="row">
+			<div class="col-lg-4">
+				<div class="row">
+					<div class="col-9 mt-lg-5 grid">
+						<h3>Fix Deposite</h3>
+						<p class="mt-2"> Vestibulum ante ipsum primis in faucibus orci luctus ipsum.</p>
+					</div>
+					<div class="col-3 mt-lg-5 icon text-lg-center text-left grid1">
+						<img src="/static/images/a2.png" alt="" class="img-fluid">
+					</div>
+
+					<div class="col-9 mt-sm-5 mt-4 grid">
+						<h3>Personal Profile</h3>
+						<p class="mt-2"> Vestibulum ante ipsum primis in faucibus orci luctus ipsum.</p>
+					</div>
+					<div class="col-3 mt-sm-5 mt-4 icon text-lg-center text-left grid4">
+						<img src="/static/images/a3.png" alt="" class="img-fluid">
+					</div>
+
+					<div class="col-9 mt-sm-5 mt-4 grid">
+						<h3>Cheque Transfer</h3>
+						<p class="mt-2"> Vestibulum ante ipsum primis in faucibus orci luctus ipsum.</p>
+					</div>
+					<div class="col-3 mt-sm-5 mt-4 icon text-lg-center text-left grid5">
+						<img src="/static/images/a1.png" alt="" class="img-fluid">
+					</div>
+
+				</div>
+			</div>
+			<div class="col-lg-4 text-center my-lg-0 my-4">
+				<img src="/static/images/serv.jpg" alt="" class="img-fluid">
+			</div>
+			<div class="col-lg-4 text-right">
+				<div class="row">
+					<div class="col-3 mt-sm-5 mt-4 icon text-lg-center text-right grid6">
+						<img src="/static/images/a2.png" alt="" class="img-fluid">
+					</div>
+					<div class="col-9 mt-sm-5 mt-4 grid">
+						<h3>Credit, Debit Cards</h3>
+						<p class="mt-2"> Vestibulum ante ipsum primis in faucibus orci luctus ipsum.</p>
+					</div>
+
+					<div class="col-3 mt-sm-5 mt-4 icon text-lg-center text-right grid7">
+						<img src="/static/images/a3.png" alt="" class="img-fluid">
+					</div>
+					<div class="col-9 mt-sm-5 mt-4 grid">
+						<h3>Savings Account</h3>
+						<p class="mt-2"> Vestibulum ante ipsum primis in faucibus orci luctus ipsum.</p>
+					</div>
+
+					<div class="col-3 mt-sm-5 mt-4 icon text-lg-center text-right grid3">
+						<img src="/static/images/a1.png" alt="" class="img-fluid">
+					</div>
+					<div class="col-9 mt-sm-5 mt-4 grid">
+						<h3>24/7 Online Support</h3>
+						<p class="mt-2"> Vestibulum ante ipsum primis in faucibus orci luctus ipsum.</p>
+					</div>
+
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+<!-- //services -->
+
+<!-- other services -->
+<section class="other_services pt-5">
+	<div class="container py-md-5 py-3">
+		<h2 class="heading mb-5">A wide range<strong> of Banking services </strong></h2>
+		<div class="row">
+			<div class="col-lg-4 col-sm-6 mb-5">
+				<div class="grid">
+					<img src="/static/images/banner2.jpg" alt="" class="img-fluid" />
+					<div class="info p-4">
+						<h4 class="">Personal Banking</h4>
+						<p class="my-3">Onec consequat sapien ut amet leo cursus rhoncus. Nullam dui mi....</p>
+						<a href="#">Read More </a>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-4 col-sm-6 mb-5">
+				<div class="grid">
+					<img src="/static/images/banner1.jpg" alt="" class="img-fluid" />
+					<div class="info p-4">
+						<h4 class="">Financial Services</h4>
+						<p class="my-3">Onec consequat sapien ut amet leo cursus rhoncus. Nullam dui mi....</p>
+						<a href="#">Read More </a>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-4 col-sm-6 mb-5">
+				<div class="grid">
+					<img src="/static/images/banner2.jpg" alt="" class="img-fluid" />
+					<div class="info p-4">
+						<h4 class="">Loan Management</h4>
+						<p class="my-3">Onec consequat sapien ut amet leo cursus rhoncus. Nullam dui mi....</p>
+						<a href="#">Read More </a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+<!-- //other services -->
+
+<!-- products -->
+<section class="products py-5">
+	<div class="container py-lg-5 py-3">
+		<h3 class="heading mb-sm-5 mb-4">Products <strong>To Meet Your Life Goals</strong></h3>
+		<div class="row products_grids text-center mt-5">
+			<div class="col-md-3 col-6 grid4">
+				<div class="prodct1 border p-3">
+					<a href="#">
+						<img src="/static/images/a1.png" alt="" class="img-fluid">
+						<h3 class="mt-2"> Personal Loan</h3>
+						<span class="fa fa-long-arrow-right"></span>
+					</a>
+				</div>
+			</div>
+			<div class="col-md-3 col-6 grid5">
+				<div class="prodct1 border p-3">
+					<a href="/fix_deposit_list/">
+						<img src="/static/images/a2.png" alt="" class="img-fluid">
+						<h3 class="mt-2">Fixed Deposit</h3>
+						<span class="fa fa-long-arrow-right"></span>
+					</a>
+				</div>
+			</div>
+			<div class="col-md-3 col-6 grid6 mt-md-0 mt-3">
+				<div class="prodct1 border p-3">
+					<a href="#">
+						<img src="/static/images/a8.png" alt="" class="img-fluid">
+						<h3 class="mt-2">Savings Account</h3>
+						<span class="fa fa-long-arrow-right"></span>
+					</a>
+				</div>
+			</div>
+			<div class="col-md-3 col-6 grid7 mt-md-0 mt-3">
+				<div class="prodct1 border p-3">
+					<a href="#">
+						<img src="/static/images/a4.png" alt="" class="img-fluid">
+						<h3 class="mt-2">Credit Cards</h3>
+						<span class="fa fa-long-arrow-right"></span>
+					</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+<!-- //products -->
+{% endblock%}

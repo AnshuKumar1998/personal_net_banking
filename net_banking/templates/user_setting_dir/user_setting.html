@@ -1,0 +1,148 @@
+{% extends 'master.html' %}
+{% block body %}
+<section class="inner-banner" id="home">
+   <div class="inner-layer">
+      <div class="container">
+      </div>
+   </div>
+</section>
+<!-- end inner-banner -->
+
+<!-- breadcrumb -->
+<div class="breadcrumb-w3pvt">
+   <div class="container">
+      <nav aria-label="breadcrumb">
+         <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+               <a href="{% url 'index' %}">Home</a>
+            </li>
+            <li class="breadcrumb-item" aria-current="page">Log In</li>
+         </ol>
+      </nav>
+   </div>
+</div>
+<!-- end breadcrumb -->
+
+<div class="container mt-5">
+    <h1 class="mb-4">User Settings</h1>
+    <div class="list-group">
+        <a href="#" class="list-group-item list-group-item-action">Change Password</a>
+        <a href="#" class="list-group-item list-group-item-action" id="deleteAccountLink">Delete Account</a>
+    </div>
+</div>
+<br>
+<!-- Modal -->
+<div id="deleteAccountModal" class="modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Delete Account</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="closeModal()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete your account?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="closeModal()">No</button>
+        <button type="button" class="btn btn-primary" id="confirmDelete">Yes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Progress Bar -->
+<div id="progressOverlay">
+    <div id="progressContainer" class="bg-dark">
+        <div class="progress bg-secondary" role="progressbar" aria-label="Example with label" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" style="height: 20px; width: 10%">Processing...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('deleteAccountLink').addEventListener('click', function(event) {
+        event.preventDefault();
+        document.getElementById('deleteAccountModal').style.display = 'block';
+    });
+
+    document.getElementById('confirmDelete').addEventListener('click', function() {
+        // Hide the modal
+        closeModal();
+
+        // Show progress overlay
+        document.getElementById('progressOverlay').style.display = 'flex';
+
+        // Make AJAX call to delete account
+        fetch("{% url 'delete_account' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify({
+                username: '{{ request.user.username }}'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'error') {
+                alert(data.message);
+                document.getElementById('progressOverlay').style.display = 'none';
+            } else {
+                let progress = 0;
+                const progressBar = document.getElementById('progressBar');
+                const interval = setInterval(function() {
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        // Log out the user
+                        fetch("{% url 'logout' %}", {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': '{{ csrf_token }}',
+                            },
+                        }).then(() => {
+                            // Redirect to index page after completion
+                            window.location.href = "{% url 'index' %}";
+                        });
+                    } else {
+                        progress += 10;
+                        progressBar.style.width = progress + '%';
+                        progressBar.innerText = 'Processing ' + progress + '%';
+                    }
+                }, 500);
+            }
+        });
+    });
+
+    function closeModal() {
+        document.getElementById('deleteAccountModal').style.display = 'none';
+    }
+</script>
+<style>
+    #progressOverlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #progressContainer {
+        width: 300px;
+        padding: 20px;
+        border-radius: 10px;
+    }
+
+    .progress {
+        border-radius: 10px;
+    }
+</style>
+{% endblock %}

@@ -34,6 +34,7 @@
       <script src="{% static 'js/profit-chart.js' %}"></script>
       <script src="{% static 'js/payment_validation.js' %}"></script>
       <script src="{% static 'js/loan_data_delete.js' %}"></script>
+      <script src="{% static 'js/profile.js' %}"></script>
       <title>Mini Bank</title>
       <!-- css files -->
       <link href="/static/css/bootstrap.css" rel='stylesheet' type='text/css' />
@@ -78,8 +79,8 @@
                <ul class="menu ml-auto mt-1">
                   <li class=""><a href="{% url 'index' %}">Home</a></li>
                   <li class=""><a href="about.html">About</a></li>
-                  <li class=""><a href="services.html">Services</a></li>
-                  <li class=""><a href="blog.html">Blog</a></li>
+                  <li class=""><a href="/service/">Services</a></li>
+                  <li class=""><a href="/post_list/">News</a></li>
                   <li class=""><a href="/contact_us">Contact</a></li>
                   {% if user.is_authenticated %}
                   <li><a href="{% url 'user_account' %}"><i class=""></i>Account</a></li>
