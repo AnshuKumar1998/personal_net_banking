@@ -4,7 +4,8 @@ from datetime import datetime
 import random
 import pytz
 from dateutil.relativedelta import relativedelta
-from .models import UserLoanDetails, Account_Details, User_Inbox
+from .models import UserLoanDetails, Account_Details, User_Inbox, UserTransactionDetails
+
 
 def today_date():
     kolkata_timezone = pytz.timezone('Asia/Kolkata')
@@ -47,4 +48,24 @@ def inbox_message(account_holder,subject,content):
         subject=subject,
         content=content,
         date=today_date()
+    )
+
+
+def transaction_slip(account_holder,transaction_id,withdraw,section,section_no,amount,method,status):
+      # Replace with actual logic
+    UserTransactionDetails.objects.create(
+        user=account_holder,
+        username=account_holder.username,
+        name=account_holder.name,
+        email=account_holder.email,
+        mobile=account_holder.mobile,
+        transaction_id=transaction_id,
+        transaction_date=datetime.now(),
+        transaction_type=withdraw,
+        section=section,
+        section_no=section_no,
+        amount=amount,
+        payment_method=method,
+        payment_status=status,
+        description=""
     )

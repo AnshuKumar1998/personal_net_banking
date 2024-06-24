@@ -69,39 +69,47 @@
 
     <!-- Payment Options -->
     {% if user.is_authenticated %}
-    <form method="post" action="{% url 'process_payment' %}" id="paymentForm">
-        {% csrf_token %}
-        <div class="mt-4">
-            <label>
-                <input type="checkbox" id="full_payment_checkbox" onclick="togglePaymentOption('full')"> Full Payment
+<form method="post" action="{% url 'fix_deposite_process_payment' %}" id="paymentForm">
+    {% csrf_token %}
+    <div class="mt-4">
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="payment_option" id="full_payment_radio" onclick="togglePaymentOption('full')" checked>
+            <label class="form-check-label" for="full_payment_radio">
+                Full Payment
             </label>
-            <label class="ml-3">
-                <input type="checkbox" id="emi_checkbox" onclick="togglePaymentOption('emi')"> EMI
+        </div>
+        <div class="form-check form-check-inline ml-3">
+            <input class="form-check-input" type="radio" name="payment_option" id="emi_radio" onclick="togglePaymentOption('emi')">
+            <label class="form-check-label" for="emi_radio">
+                EMI
             </label>
         </div>
+    </div>
 
-        <!-- Amount Input Box -->
-        <div class="mt-2">
-            <input type="text" id="payment_amount" name="payment_amount" readonly>
-        </div>
+    <!-- Amount Input Box -->
+    <div class="mt-2">
+        <input type="text" id="payment_amount" name="payment_amount" readonly>
+    </div>
 
-        <!-- Hidden Inputs to Store Other Data -->
-        <input type="hidden" name="fix_deposite_id" value="{{ deposite_id }}">
-        <input type="hidden" name="fix_deposite_name" value="{{ deposite_name }}">
-        <input type="hidden" name="fix_deposite_rate_of_intrest" value="{{ rate|floatformat:2 }}">
-        <input type="hidden" name="fix_deposite_month" value="{{ month_word }}">
-        <input type="hidden" name="fix_deposite_amt" value="{{ deposite_amount }}">
-        <input type="hidden" name="fix_deposite_maturity_amt" value="{{ mataruity_amt }}">
-        <input type="hidden" name="fix_deposite_st_date" value="{{ mataruity_st_date|date:'Y-m-d' }}">
-        <input type="hidden" name="fix_deposite_end_date" value="{{ mataruity_end_date|date:'Y-m-d' }}">
-        <input type="hidden" name="fix_deposite_description" value="">
+    <!-- Hidden Inputs to Store Other Data -->
+    <input type="hidden" name="fix_deposite_id" value="{{ deposite_id }}">
+    <input type="hidden" name="fix_deposite_name" value="{{ deposite_name }}">
+    <input type="hidden" name="fix_deposite_rate_of_intrest" value="{{ rate|floatformat:2 }}">
+    <input type="hidden" name="fix_deposite_month" value="{{ month_word }}">
+    <input type="hidden" name="fix_deposite_amt" value="{{ deposite_amount }}">
+    <input type="hidden" name="fix_deposite_maturity_amt" value="{{ mataruity_amt }}">
+    <input type="hidden" name="fix_deposite_st_date" value="{{ mataruity_st_date|date:'Y-m-d' }}">
+    <input type="hidden" name="fix_deposite_end_date" value="{{ mataruity_end_date|date:'Y-m-d' }}">
+    <input type="hidden" name="fix_deposite_description" value="">
 
-        <!-- Add this inside your form -->
-        <!-- Payment Button -->
-        <div class="mt-3">
-            <button type="button" class="btn btn-primary" onclick="processPayment()">Make Payment</button>
-        </div>
-    </form>
+    <!-- Payment Button -->
+    <div class="mt-3">
+        <button type="button" class="btn btn-primary" onclick="processPayment()">Make Payment</button>
+    </div>
+</form>
+
+
+
 
     {% endif %}
 </div>
@@ -127,5 +135,5 @@
 </div>
 
 <!-- Include payment.js -->
-<script src="{% static 'js/payment.js' %}"></script>
+
 {% endblock %}

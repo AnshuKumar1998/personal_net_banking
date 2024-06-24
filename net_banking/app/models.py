@@ -130,7 +130,8 @@ class UserTransactionDetails(models.Model):
     transaction_id = models.CharField(max_length=100)  # Unique transaction identifier
     transaction_date = models.DateTimeField(auto_now_add=True)  # Date and time of the transaction
     transaction_type = models.CharField(max_length=50)  # Type of transaction (e.g., 'payment', 'refund')
-    loan_id = models.CharField(max_length=100, null=True, blank=True)
+    section = models.CharField(max_length=100, null=True, blank=True)
+    section_no = models.CharField(max_length=200, default="")
     amount = models.DecimalField(max_digits=10, decimal_places=2)  # Amount of the transaction
     payment_method = models.CharField(max_length=50)  # Payment method (e.g., 'credit card', 'bank transfer')
     payment_status = models.CharField(max_length=50)  # Status of the payment (e.g., 'completed', 'pending', 'failed')
@@ -227,6 +228,18 @@ class AdminMessage(models.Model):
 
     def __str__(self):
         return f"Admin Message ({self.created_at})"
+
+class Complaint(models.Model):
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    message = models.TextField()
+    reply = models.TextField(default="")
+    file = models.FileField(upload_to='complaints/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    complaint_id = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.complaint_id}"
 
 
 

@@ -12,7 +12,7 @@ $(document).ready(function() {
         // Add CSRF token
         formData.append('csrfmiddlewaretoken', $('input[name=csrfmiddlewaretoken]').val());
 
-        console.log("hello");  // Print "hello" to console when file is selected
+       // Print "hello" to console when file is selected
 
         // Implement AJAX request to upload file
         $.ajax({

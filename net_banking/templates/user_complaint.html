@@ -1,0 +1,163 @@
+{% extends 'master.html' %}
+
+{% block body %}
+<!-- inner-banner -->
+<section class="inner-banner" id="home">
+    <div class="inner-layer">
+        <div class="container">
+        </div>
+    </div>
+</section>
+<!-- //inner-banner -->
+<!-- breadcrumb -->
+<div class="breadcrumb-w3pvt">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'index' %}">Home</a>
+                </li>
+                <li class="breadcrumb-item" aria-current="page">User Complaint</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+<!-- contact -->
+<section class="contact py-5">
+    <div class="container py-lg-5">
+        <h2 class="heading mb-sm-5 mb-4">Get in <strong> touch with us </strong></h2>
+        <div class="row">
+            <div class="col-lg-6 contact-form mt-md-0 mt-sm-5 mt-4">
+                <h4 class="mb-4 w3f_title">Complaint Form</h4>
+                <form name="complaintForm" id="complaintForm" method="post" action="{% url 'complaint_form' %}" enctype="multipart/form-data" onsubmit="return(validate());" novalidate="novalidate">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" class="form-control" placeholder="Enter Name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" class="form-control" placeholder="Enter Email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>How can we help?</label>
+                        <textarea class="form-control" name="message" placeholder="Enter Your Message Here" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="formFile" class="form-label">Attach Any File</label>
+                        <input class="form-control" type="file" id="formFile" name="formFile" style="height: 60px;">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+
+            <div class="col-lg-6 contact-address">
+                <h4 class="mb-4 w3f_title">Contact Address</h4>
+                <ul class="list-w3">
+                    <li class="d-flex"><span class="fa mt-1 mr-1 fa-map-marker"></span>163 Palihari Gurudih Main Road, <br>Gomia, 829111</li>
+                    <li class="my-3"><span class="fa mr-1 fa-phone"></span>+91 8409202262</li>
+                    <li class="my-3"><span class="fa mr-1 fa-phone"></span>+91 8409202262</li>
+                    <li class=""><span class="fa mr-1 fa-envelope"></span><a href="mailto:anshumk123@gmail.com">anshumk123@gmail.com</a></li>
+                </ul>
+                <h4 class="mt-sm-5 mt-4 mb-3 w3f_title">Follow Us</h4>
+                <p>You Can Follow For Latest Update</p>
+                <ul class="list-social">
+                    <li><a href="#" class="facebook"><span class="fa mr-1 fa-facebook"></span></a></li>
+                    <li class="my-3"><a href="#" class="twitter"><span class="fa mr-1 fa-twitter"></span></a></li>
+                    <li class="my-3"><a href="#" class="google"><span class="fa mr-1 fa-google-plus"></span></a></li>
+                    <li class=""><a href="#" class="linkedin"><span class="fa mr-1 fa-linkedin"></span></a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Recent Complaints -->
+<section class="accordion-section py-5">
+    <div class="container">
+        <h2 class="heading mb-sm-5 mb-4">Recent <strong> Complaints </strong></h2>
+        <div class="accordion" id="accordionExample">
+            {% for complaint in recent_complaints %}
+            <div class="card highlight">
+                <div class="card-header" id="heading{{ forloop.counter }}">
+                    <h2 class="mb-0 d-flex justify-content-between align-items-center">
+                        <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapse{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse{{ forloop.counter }}" style="background-color: #f0ad4e; color: white;">
+                            # {{ complaint.complaint_id }} - {{ complaint.name }}
+                        </button>
+                        <form method="post" action="{% url 'delete_complaint' complaint.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
+                    </h2>
+                </div>
+                <div id="collapse{{ forloop.counter }}" class="collapse" aria-labelledby="heading{{ forloop.counter }}" data-parent="#accordionExample">
+                    <div class="card-body">
+                        {{ complaint.message }}
+                        {% if complaint.file %}
+                        <p>Attached File: <a href="{{ complaint.file.url }}" target="_blank">Download</a></p>
+                        {% endif %}
+                    </div>
+                    {% if complaint.reply %}
+                     <div class="card-body">
+                         <p>Reply : </p>
+                        {{ complaint.reply }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<div class="modal fade" id="successModal" tabindex="-1" role="dialog" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="successModalLabel">Success</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="modalMessage">
+                Your complaint has been successfully sent!
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include jQuery and Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        // Show the success modal if messages are present
+        {% if messages %}
+        {% for message in messages %}
+        $('#modalMessage').text("{{ message }}");
+        $('#successModal').modal('show');
+        {% endfor %}
+        {% endif %}
+
+        // Custom logic to ensure accordion toggles correctly
+        $('#accordionExample .collapse').on('show.bs.collapse', function () {
+            $('#accordionExample .collapse.show').collapse('hide');
+        });
+
+        // Ensure click toggles the collapse
+        $('.card-header button').click(function() {
+            let target = $(this).attr('data-target');
+            if ($(target).hasClass('show')) {
+                $(target).collapse('hide');
+            } else {
+                $(target).collapse('show');
+            }
+        });
+    });
+</script>
+{% endblock %}

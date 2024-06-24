@@ -1,8 +1,15 @@
 from django.contrib import admin
 # Register your models here.
 from .models import Contact_us, Account_holders, Account_Details, User_Inbox, MonthlyProfit, UserLoanDetails, \
-    UserTransactionDetails, BankWallet, FixDepositeList, FixDepositeUsers, Post, AdminMessage
+    UserTransactionDetails, BankWallet, FixDepositeList, FixDepositeUsers, Post, AdminMessage,Complaint
+from django.contrib import messages
 
+
+
+
+
+
+admin.site.register(Complaint)
 admin.site.register(Contact_us)
 admin.site.register(Account_Details)
 admin.site.register(User_Inbox)
@@ -20,6 +27,21 @@ class UserLoanDetailsAdmin(admin.ModelAdmin):
     list_display = ('email', 'username', 'loan_principle_amt', 'loan_status', 'loan_release_date','loan_close_date')
     list_filter = ('email', 'username', 'loan_status', 'loan_release_date', 'loan_principle_amt','loan_close_date')
     search_fields = ('email', 'username')  # Enable search on email and username fields
+
+    def save_model(self, request, obj, form, change):
+        try:
+            super().save_model(request, obj, form, change)
+        except Exception as e:
+            messages.error(request, f'Error saving loan details: {e}')
+            return
+
+        if hasattr(obj, 'update_status_success'):
+            if obj.update_status_success:
+                self.message_user(request, f'The loan Id {obj.loan_id} and amount {obj.loan_principle_amt} successfully transferred.')
+            else:
+                self.message_user(request,
+                                  f'Insufficient balance in bank wallet. The loan {obj.loan_id} status was not updated.',
+                                  messages.ERROR)
 
 
 admin.site.register(UserLoanDetails, UserLoanDetailsAdmin)

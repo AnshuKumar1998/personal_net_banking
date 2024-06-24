@@ -78,7 +78,7 @@ urlpatterns = [
 
     path('service/',views.service,name="service"),
 
-    path('process-payment/', views.process_payment, name='process_payment'),
+    path('fix_deposite_process_payment/', views.fix_deposite_process_payment, name='fix_deposite_process_payment'),
 
     path('post_list/', views.post_list, name='post_list'),
 
@@ -96,6 +96,13 @@ urlpatterns = [
 
     path('fixDeposite-paymentProcess/', views.fix_deposite_payment_process, name='fixDeposite-paymentProcess'),
 
+    path('complaint/', views.complaint_form, name='complaint_form'),
+
+    path('delete_complaint/<int:id>/', views.delete_complaint, name='delete_complaint'),
+
+    path('transfer_money/', views.transfer_money, name='transfer_money'),
+
+    path('fetch-user-data/', views.fetch_user_data, name='fetch-user-data'),
 
     #------------ End User Account URL --------------------------------------------------------
 ]+ static(settings.MEDIA_URL,document_root = settings.MEDIA_ROOT)

@@ -1,15 +1,20 @@
+import uuid
+import json
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
+from django.urls import reverse
 from datetime import datetime
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
 from django.db import transaction
 from django.db.models import F, ExpressionWrapper, FloatField, Q
-from django.http import JsonResponse
-from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit,UserLoanDetails,UserTransactionDetails,BankWallet,FixDepositeList,FixDepositeUsers,Post,AdminMessage
+from django.http import JsonResponse, HttpResponse
+from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit,UserLoanDetails,UserTransactionDetails,BankWallet,FixDepositeList,FixDepositeUsers,Post,AdminMessage,Complaint
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
-from app.help import today_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number, inbox_message
+from app.help import today_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number, inbox_message,transaction_slip
 from django.contrib.auth.models import User
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -50,6 +55,8 @@ def contact_us(request):
         return redirect('contact_us')  # Prevent form resubmission
     return render(request,'contact_us.html')
 
+
+
 def login(request):
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -65,7 +72,6 @@ def login(request):
             return render(request, 'users_dir/login.html')
 
     return render(request, 'users_dir/login.html')
-
 
 @never_cache
 @login_required
@@ -95,7 +101,7 @@ def user_account(request):
 
         transactions = UserTransactionDetails.objects.filter(username=request.user).order_by('-transaction_date')
         transaction_list = list(transactions.values(
-            'loan_id',
+            'section',
             'amount',
             'transaction_type',
             'transaction_id',
@@ -137,8 +143,6 @@ def user_account(request):
 
     return render(request, 'users_dir/user_account.html', context)
 
-
-
 def logout(request):
     auth_logout(request)
     response = redirect('login')
@@ -147,7 +151,6 @@ def logout(request):
     response['Pragma'] = 'no-cache'
     response['Expires'] = '0'
     return response
-
 
 def new_account_holder(request):
     if request.method == 'POST':
@@ -243,7 +246,6 @@ def activate(request):
 
     return render(request, 'users_dir/user_account.html')
 
-
 @login_required
 def update_profile(request):
     if request.method == 'POST':
@@ -262,7 +264,6 @@ def update_profile(request):
         messages.success(request, 'Profile Successfully Updated')  #
         return redirect('user_account')
     return render(request, 'users_dir/user_account.html')
-
 
 @csrf_exempt
 def delete_message(request, message_id):
@@ -283,6 +284,8 @@ def get_profit_data(request):
 @login_required
 def chart_view(request):
     return render(request, 'users_dir/blog.html')
+
+# ---------------------  loan Related All Function Here-----------------------
 @login_required
 def loan_preview_form(request):
     if request.method == "POST":
@@ -405,6 +408,17 @@ def loan_form(request):
     # If not a POST request, render the loan form template
     return render(request, 'users_dir/user_account.html')
 
+@csrf_exempt
+def delete_loan(request, loan_id):
+    if request.method == 'DELETE':
+        try:
+            loan = UserLoanDetails.objects.get(loan_id=loan_id)
+            loan.delete()
+            return JsonResponse({'success': True})
+        except UserLoanDetails.DoesNotExist:
+            return JsonResponse({'error': 'Loan not found'}, status=404)
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
 @login_required
 def payment_page(request):
     loan_id = request.GET.get('loan_id')
@@ -428,6 +442,34 @@ def payment_page(request):
 
     return render(request, 'payment_page.html', context)
 
+@receiver(pre_save, sender=UserLoanDetails)
+def update_loan_status(sender, instance, **kwargs):
+    if instance.pk:
+        previous = UserLoanDetails.objects.get(pk=instance.pk)
+        if previous.loan_status == "Processing" and instance.loan_status == "Running":
+
+            bank_wallet = BankWallet.get_instance()
+            account_holder = Account_holders.objects.get(email=instance.user)
+            account_details = Account_Details.objects.get(username=account_holder.username)
+
+            # Check if bank balance is sufficient
+            if bank_wallet.bank_amount >= instance.loan_principle_amt:
+                # Subtract the loan amount from bank_wallet.bank_amount
+                bank_wallet.bank_amount -= instance.loan_principle_amt
+                bank_wallet.update_date = timezone.now()
+                bank_wallet.save()
+
+                # Add the loan amount to the user's account balance
+                account_details.current_amt += instance.loan_principle_amt
+                account_details.save()
+
+                # Set success flag for successful update
+                instance.update_status_success = True
+
+            else:
+                # Set flag for insufficient balance
+                instance.update_status_success = False
+# -------------------------------End Loan Related Function-----------------------
 @login_required
 def process_payment(request):
     if request.method == "POST":
@@ -445,22 +487,7 @@ def process_payment(request):
                 if pay_amt == total:
                     loan_details.loan_status = "Closed"
                     loan_details.save()
-                    transaction_id = 000  # Replace with actual logic for generating transaction ID
-                    UserTransactionDetails.objects.create(
-                        user=account_holder,
-                        username=account_holder.username,
-                        name=account_holder.name,
-                        email=account_holder.email,
-                        mobile=account_holder.mobile,
-                        transaction_id=transaction_id,
-                        transaction_date=today_date(),
-                        transaction_type="payment",
-                        loan_id=loan_id,
-                        amount=pay_amt,
-                        payment_method="Credit Card",
-                        payment_status="Completed",
-                        description=""
-                    )
+                    transaction_slip(account_holder, 000, "Debited", "Loan",loan_id, pay_amt, "Credit Card", "Complete")
                     inbox_message(account_holder, "Loan Closed",f"Your loan {pay_amt} was successfully closed.\nThank you for choosing us.")
                     bank_wallet.bank_amount += pay_amt
                     bank_wallet.update_date = today_date()
@@ -470,22 +497,7 @@ def process_payment(request):
                     remaining = total - pay_amt
                     loan_details.loan_paid_amt += pay_amt
                     loan_details.save()
-                    transaction_id = 000  # Replace with actual logic for generating transaction ID
-                    UserTransactionDetails.objects.create(
-                        user=account_holder,
-                        username=account_holder.username,
-                        name=account_holder.name,
-                        email=account_holder.email,
-                        mobile=account_holder.mobile,
-                        transaction_id=transaction_id,
-                        transaction_date=today_date(),
-                        transaction_type="payment",
-                        loan_id=loan_id,
-                        amount=pay_amt,
-                        payment_method="Credit Card",
-                        payment_status="Completed",
-                        description=""
-                    )
+                    transaction_slip(account_holder, 000, "Debited", "Loan",loan_id, pay_amt, "Credit Card", "Complete")
                     inbox_message(account_holder,"Loan Paid Transaction",f"Your payment of {pay_amt} was successful. Remaining amount: {remaining}")
                     bank_wallet.bank_amount += pay_amt
                     bank_wallet.update_date = today_date()
@@ -517,18 +529,6 @@ def get_transactions(request):
     ))
     return JsonResponse({'data': transaction_list})
 
-
-
-@csrf_exempt
-def delete_loan(request, loan_id):
-    if request.method == 'DELETE':
-        try:
-            loan = UserLoanDetails.objects.get(loan_id=loan_id)
-            loan.delete()
-            return JsonResponse({'success': True})
-        except UserLoanDetails.DoesNotExist:
-            return JsonResponse({'error': 'Loan not found'}, status=404)
-    return JsonResponse({'error': 'Invalid request'}, status=400)
 
 def fix_deposit_list(request):
     fix_deposits = FixDepositeList.objects.all()
@@ -587,7 +587,7 @@ def fix_deposite_details(request, fix_deposite_id):
 
 
 @login_required
-def process_payment(request):
+def fix_deposite_process_payment(request):
     if request.method == 'POST':
         user = request.user
         profile = Account_holders.objects.get(username=user)
@@ -615,22 +615,7 @@ def process_payment(request):
             logger.error("Invalid value received for amount fields")
             return JsonResponse({'success': False, 'error': 'Invalid amount values'})
 
-        transaction_id = 000  # Replace with actual logic for generating transaction ID
-        UserTransactionDetails.objects.create(
-            user=profile,
-            username=profile.username,
-            name=profile.name,
-            email=profile.email,
-            mobile=profile.mobile,
-            transaction_id=transaction_id,
-            transaction_date=today_date(),
-            transaction_type="payment",
-            loan_id=fix_deposite_id,
-            amount=float(fix_deposite_amt),
-            payment_method="Credit Card",
-            payment_status="Completed",
-            description=""
-        )
+        transaction_slip(profile, 000, "Debited", "Fix Deposite", fix_deposite_id, fix_deposite_amt, "Credit Card","Complete")
         bank_wallet.bank_amount += float(fix_deposite_amt)
         bank_wallet.update_date = today_date()
         bank_wallet.save()
@@ -701,6 +686,30 @@ def user_activity(request):
     return render(request, 'user_setting_dir/user_activity.html', context)
 
 
+def complaint_form(request):
+    if request.method == "POST":
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        message = request.POST.get('message')
+        file = request.FILES.get('formFile')
+
+        complaint_id = str(uuid.uuid4())
+
+        complaint = Complaint(
+            name=name,
+            email=email,
+            message=message,
+            file=file,
+            complaint_id=complaint_id
+        )
+        complaint.save()
+
+        messages.success(request, 'Your complaint has been successfully sent!')
+        return redirect(reverse('complaint_form'))
+
+    recent_complaints = Complaint.objects.all().order_by('-created_at')[:5]
+    return render(request, 'user_complaint.html', {'recent_complaints': recent_complaints})
+
 
 @login_required
 def hide_message(request):
@@ -712,7 +721,6 @@ def hide_message(request):
             return JsonResponse({'status': 'ok'})
         except Account_holders.DoesNotExist:
             return JsonResponse({'status': 'error'})
-
 
 
 @login_required
@@ -817,22 +825,7 @@ def fix_deposite_payment_process(request):
             logger.error("Invalid value received for amount fields")
             return JsonResponse({'success': False, 'error': 'Invalid amount values'})
 
-        transaction_id = 000  # Replace with actual logic for generating transaction ID
-        UserTransactionDetails.objects.create(
-            user=profile,
-            username=profile.username,
-            name=profile.name,
-            email=profile.email,
-            mobile=profile.mobile,
-            transaction_id=transaction_id,
-            transaction_date=today_date(),
-            transaction_type="payment",
-            loan_id=fix_deposite_id,
-            amount=float(paid_amt),
-            payment_method="Credit Card",
-            payment_status="Completed",
-            description=""
-        )
+        transaction_slip(profile, 000, "Debited", "Fix Deposite", fix_deposite_id, paid_amt, "Credit Card","Complete")
         bank_wallet.bank_amount += float(paid_amt)
         bank_wallet.update_date = today_date()
         bank_wallet.save()
@@ -844,6 +837,89 @@ def fix_deposite_payment_process(request):
 
         inbox_message(profile, "Fix Deposite", "Fix Deposite Amount paid")
 
-        return JsonResponse({'success': True})
+
+        return redirect('activity')  # Redirect to an appropriate page
 
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
+def delete_complaint(request, id):
+    if request.method == 'POST':
+        complaint = get_object_or_404(Complaint, id=id)
+        complaint.delete()
+        messages.success(request, 'Complaint deleted successfully.')
+    return redirect('complaint_form')  # Adjust 'complaint_page' to your actual complaint listing page name
+
+
+@csrf_exempt  # Temporarily exempt CSRF to focus on troubleshooting
+def transfer_money(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            account = data.get('account')
+            amount = float(data.get('amount'))
+
+            user_account = Account_Details.objects.get(username=request.user.username)
+            account_holder = Account_holders.objects.get(username=request.user.username)
+            user_name = account_holder.name
+
+            # Example: Perform money transfer logic here
+            if user_account.current_amt >= amount:
+                # Deduct amount from current user's balance
+                user_account.current_amt -= amount
+                user_account.save()
+
+                transaction_slip(account_holder, 000, "Debited", "Transfer", account, amount, "Account","Complete")
+                inbox_message(account_holder, "Money Transfer", f"Your money of {amount} has been successfully transferred.")
+
+                # Add amount to recipient's account
+                try:
+                    recipient = Account_Details.objects.get(account_no=account)
+                    recipient.current_amt += amount
+                    recipient.save()
+
+                    recipient_account_holder = Account_holders.objects.get(username=recipient.username)
+                    transaction_slip(recipient_account_holder, 000, "Credited", "Recived", account, amount, "Account", "Success")
+
+                    inbox_message(recipient_account_holder, "Credited Money", f"{user_name} sent {amount} to your account")
+
+                   # messages.success(request, 'Money transferred successfully.')
+                    return JsonResponse({'message': 'Money transferred successfully.'})
+
+                except Account_Details.DoesNotExist:
+                    #messages.error(request, 'Recipient account not found.')
+                    return JsonResponse({'message': 'Recipient account not found.'}, status=404)
+
+            else:
+                #messages.error(request, 'Insufficient balance to transfer money.')
+                return JsonResponse({'message': 'Insufficient balance to transfer money.'}, status=400)
+
+        except Exception as e:
+            #messages.error(request, f'Error: {str(e)}')
+            return JsonResponse({'message': f'Error: {str(e)}'}, status=500)
+
+    return JsonResponse({'message': 'Method not allowed.'}, status=405)
+
+def fetch_user_data(request):
+    if request.method == 'GET':
+        account_input = request.GET.get('accountInput')
+
+        if account_input.isdigit():
+            account_details = get_object_or_404(Account_Details, account_no=account_input)
+        else:
+            account_details = get_object_or_404(Account_Details, upi_no=account_input)
+
+        user_data = {
+            'name': account_details.name,
+            'email': account_details.email,
+            'mobile': account_details.mobile,
+        }
+
+
+        if user_data:
+            return JsonResponse({'success': True, 'data': user_data})
+        else:
+            return JsonResponse({'success': False})
+
+    return render(request, 'users_dir/user_account.html')
+
