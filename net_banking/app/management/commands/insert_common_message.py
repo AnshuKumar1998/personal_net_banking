@@ -23,7 +23,7 @@ class Command(BaseCommand):
                 date=timezone.now().date()
             )
 
-        self.stdout.write(self.style.SUCCESS('Successfully inserted common message for all users.'))
+        self.stdout.write(self.style.SUCCESS('Tomorrow will be holiday'))
 
 
 # python manage.py insert_common_message  (this is command for run this file)

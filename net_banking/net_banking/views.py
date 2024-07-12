@@ -4,7 +4,7 @@ from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.urls import reverse
 from datetime import datetime
-from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
 from django.db import transaction
@@ -20,6 +20,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 import logging
 from django.core.paginator import Paginator
+from django.contrib.auth.hashers import check_password
+from django.views.decorators.http import require_POST
+from django.db.models import Count
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +48,7 @@ def blog(request):
 
 def contact_us(request):
     if request.method == "POST":
+
         contact = Contact_us(
             name = request.POST.get('name'),
             email = request.POST.get('email'),
@@ -53,7 +57,15 @@ def contact_us(request):
         contact.save()
         messages.success(request, 'Your message has been successfully sent!')
         return redirect('contact_us')  # Prevent form resubmission
-    return render(request,'contact_us.html')
+
+    name = "None"
+    if request.user.is_authenticated:
+        profile_holder = get_object_or_404(Account_holders, user=request.user)
+        name = profile_holder.name
+    context = {
+        'name':name
+    }
+    return render(request,'contact_us.html',context)
 
 
 
@@ -495,6 +507,20 @@ def process_payment(request):
                     messages.success(request, "Loan closed successfully.")
                 elif pay_amt < total:
                     remaining = total - pay_amt
+                    if remaining < 100:
+                        context = {
+                            'loan_id': loan_details.loan_id,
+                            'amount': loan_details.loan_principle_amt,
+                            'return_amount': loan_details.loan_returing_amt,
+                            'fine': loan_details.loan_fine_amt,
+                            'name': loan_details.name,
+                            'paid': loan_details.loan_paid_amt,
+                            'total': total,
+                        }
+                        messages.error(request, "Remaining can't less then 100.")
+
+                        return render(request,'payment_page.html',context)
+
                     loan_details.loan_paid_amt += pay_amt
                     loan_details.save()
                     transaction_slip(account_holder, 000, "Debited", "Loan",loan_id, pay_amt, "Credit Card", "Complete")
@@ -548,7 +574,14 @@ def fix_deposit_list(request):
 
 
 def service(request):
-    return render(request, 'service_dir/service.html')
+    name = "None"
+    if request.user.is_authenticated:
+        profile_holder = get_object_or_404(Account_holders, user=request.user)
+        name = profile_holder.name
+    context = {
+        'name': name
+    }
+    return render(request, 'service_dir/service.html',context)
 
 
 def fix_deposite_details(request, fix_deposite_id):
@@ -635,7 +668,7 @@ def fix_deposite_process_payment(request):
             fix_deposite_maturity_amt=fix_deposite_maturity_amt,
             fix_deposite_st_date=request.POST['fix_deposite_st_date'],
             fix_deposite_end_date=request.POST['fix_deposite_end_date'],
-            fix_deposite_status='Processing',
+            fix_deposite_status='Running',
             fix_deposite_description=request.POST['fix_deposite_description'],
         )
         fix_deposite_user.save()
@@ -647,11 +680,20 @@ def fix_deposite_process_payment(request):
 
 
 def post_list(request):
+    name="none"
+    if request.user.is_authenticated:
+        profile_holder = get_object_or_404(Account_holders, user=request.user)
+        name = profile_holder.name
+
     posts = Post.objects.all().order_by('-date')
     paginator = Paginator(posts, 5)  # Show 5 posts per page.
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    return render(request, 'post_list.html', {'page_obj': page_obj})
+    context ={
+        'page_obj':page_obj,
+        'name':name
+    }
+    return render(request, 'post_list.html', context)
 
 @csrf_exempt
 def like_post(request, post_id):
@@ -664,7 +706,11 @@ def like_post(request, post_id):
 
 @login_required
 def user_setting(request):
-    return render(request,'user_setting_dir/user_setting.html')
+    profile = Account_holders.objects.get(username = request.user.username)
+    context = {
+        'name':profile.name,
+    }
+    return render(request,'user_setting_dir/user_setting.html',context)
 
 @login_required
 def user_activity(request):
@@ -687,9 +733,10 @@ def user_activity(request):
 
 
 def complaint_form(request):
+    profile_holder = get_object_or_404(Account_holders, user=request.user)
     if request.method == "POST":
-        name = request.POST.get('name')
-        email = request.POST.get('email')
+        name = profile_holder.name
+        email = profile_holder.email
         message = request.POST.get('message')
         file = request.FILES.get('formFile')
 
@@ -704,11 +751,20 @@ def complaint_form(request):
         )
         complaint.save()
 
+        inbox_message(profile_holder, "Complaint", f"Complaint has been sent successfully.")
+
         messages.success(request, 'Your complaint has been successfully sent!')
         return redirect(reverse('complaint_form'))
 
-    recent_complaints = Complaint.objects.all().order_by('-created_at')[:5]
-    return render(request, 'user_complaint.html', {'recent_complaints': recent_complaints})
+    recent_complaints = Complaint.objects.filter(email=profile_holder.email).order_by('-created_at')
+
+    context = {
+        'name': profile_holder.name,
+        'email': profile_holder.email,
+        'recent_complaints': recent_complaints,
+    }
+
+    return render(request, 'user_complaint.html', context)
 
 
 @login_required
@@ -770,8 +826,6 @@ def fix_deposite_payment_details(request):
     if not fixDeposite_id:
         messages.error(request, "Invalid fixed deposit ID.")
         return redirect('user_activity')  # Redirect to an appropriate page
-
-
 
     try:
         fixDeposite_user = FixDepositeUsers.objects.get(id=fixDeposite_id, username=request.user)
@@ -922,4 +976,94 @@ def fetch_user_data(request):
             return JsonResponse({'success': False})
 
     return render(request, 'users_dir/user_account.html')
+
+
+@login_required
+def verify_old_password(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        old_password = data.get('old_password')
+
+        if check_password(old_password, request.user.password):
+            return JsonResponse({'status': 'success'})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Old password is incorrect'})
+@login_required
+def change_password(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        new_password = data.get('new_password')
+
+        account_holder = Account_holders.objects.get(user=request.user)
+
+        account_holder.password = new_password
+        account_holder.save()
+
+        user = request.user
+        user.set_password(new_password)
+        user.save()
+
+        update_session_auth_hash(request, user)  # Prevents user from being logged out after password change
+        inbox_message(account_holder, "Password Changed","Your Password Successfully has been changed")
+        messages.success(request, 'Password changed successfully.')
+        return JsonResponse({'status': 'success'})
+
+    messages.error(request, 'Failed to change password.')
+    return JsonResponse({'status': 'error', 'message': 'Failed to change password.'})
+
+
+@csrf_exempt
+@require_POST
+def update_amount(request):
+    data = json.loads(request.body)
+    amount = float(data.get('amount'))
+    profile_holder = get_object_or_404(Account_holders, user=request.user)
+
+    if amount < 99:
+        inbox_message(profile_holder, "Failed Credited Money", f"Money Rs. {amount} Failed credited to your account")
+        return JsonResponse({'success': False, 'message': 'Failed to add money.'})
+
+    if amount is not None:
+
+        profile_data = get_object_or_404(Account_Details, username=profile_holder.username)
+
+        # Update current amount
+        profile_data.current_amt += amount
+        profile_data.save()
+
+        # Send inbox message
+        inbox_message(profile_holder, "Credited Money", f"Money Rs. {amount} Successfully credited to your account")
+
+        # Return JsonResponse with success message and updated amount
+        return JsonResponse({'success': True, 'message': 'Money added successfully.', 'new_amount': profile_data.current_amt})
+
+    return JsonResponse({'success': False, 'message': 'Failed to add money.'})
+
+def get_current_amount(request):
+    profile_holder = get_object_or_404(Account_holders, user=request.user)
+    profile_data = get_object_or_404(Account_Details, username=profile_holder.username)
+    return JsonResponse({'success': True, 'current_amount': profile_data.current_amt})
+
+
+def fetch_transaction_months(request):
+    transactions = UserTransactionDetails.objects.values('transaction_date').annotate(count=Count('transaction_date'))
+    months = {transaction['transaction_date'].strftime('%Y-%m') for transaction in transactions}
+    return JsonResponse({'months': sorted(months)})
+
+
+@csrf_exempt
+def delete_transactions(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        months = data.get('months', [])
+
+        if not months:
+            return JsonResponse({'success': False, 'error': 'No months selected'}, status=400)
+
+        try:
+            for month in months:
+                UserTransactionDetails.objects.filter(transaction_date__startswith=month).delete()
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
 

@@ -11,16 +11,18 @@
 <!-- //inner-banner -->
 <!-- breadcrumb -->
 <div class="breadcrumb-w3pvt">
-    <div class="container">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item">
-                    <a href="{% url 'index' %}">Home</a>
-                </li>
-                <li class="breadcrumb-item" aria-current="page">User Complaint</li>
-            </ol>
-        </nav>
-    </div>
+   <div class="container">
+      <nav aria-label="breadcrumb">
+         <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+               <a href="{% url 'index' %}">Home</a>
+            </li>
+            <li class="breadcrumb-item" aria-current="page">Log In</li>
+             <li class="breadcrumb-item" aria-current="page">Hi, {{ name }}</li>
+             <li class="breadcrumb-item" aria-current="page">Complaint</li>
+         </ol>
+      </nav>
+   </div>
 </div>
 <!-- contact -->
 <section class="contact py-5">
@@ -33,11 +35,11 @@
                     {% csrf_token %}
                     <div class="form-group">
                         <label>Name</label>
-                        <input type="text" class="form-control" placeholder="Enter Name" name="name" required>
+                        <input type="text" class="form-control" placeholder="Enter Name" name="name" value="{{ name }}" disabled>
                     </div>
                     <div class="form-group">
                         <label>Email</label>
-                        <input type="email" class="form-control" placeholder="Enter Email" name="email" required>
+                        <input type="email" class="form-control" placeholder="Enter Email" name="email" value="{{ email }}" disabled>
                     </div>
                     <div class="form-group">
                         <label>How can we help?</label>
@@ -99,8 +101,8 @@
                         {% endif %}
                     </div>
                     {% if complaint.reply %}
-                     <div class="card-body">
-                         <p>Reply : </p>
+                    <div class="card-body">
+                        <p>Reply:</p>
                         {{ complaint.reply }}
                     </div>
                     {% endif %}
@@ -111,7 +113,8 @@
     </div>
 </section>
 
-<div class="modal fade" id="successModal" tabindex="-1" role="dialog" aria-labelledby="successModalLabel" aria-hidden="true">
+
+<div class="modal fade" id="successModal5" tabindex="-1" role="dialog" aria-labelledby="successModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -120,7 +123,7 @@
                 <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <div class="modal-body" id="modalMessage">
+            <div class="modal-body" id="modalMessage5">
                 Your complaint has been successfully sent!
             </div>
             <div class="modal-footer">
@@ -129,6 +132,7 @@
         </div>
     </div>
 </div>
+
 
 <!-- Include jQuery and Bootstrap JS -->
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
@@ -139,8 +143,8 @@
         // Show the success modal if messages are present
         {% if messages %}
         {% for message in messages %}
-        $('#modalMessage').text("{{ message }}");
-        $('#successModal').modal('show');
+        $('#modalMessage5').text("{{ message }}");
+        $('#successModal5').modal('show');
         {% endfor %}
         {% endif %}
 
@@ -160,4 +164,5 @@
         });
     });
 </script>
+
 {% endblock %}

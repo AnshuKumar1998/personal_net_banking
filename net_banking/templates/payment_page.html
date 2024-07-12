@@ -34,7 +34,7 @@
                 <th>Return Amount</th>
                 <th>Fine</th>
                 <th>Paid Amount</th>
-                <th>Total</th>
+                <th>Total<br>Remaining</th>
              </tr>
           </thead>
           <tbody>
@@ -73,5 +73,61 @@
             Remaning Amount can't less than 100 Rs.
         </div>
     </div>
+
+{% if messages %}
+<div id="successModal" class="modal fade" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+   <div class="modal-dialog">
+      <div class="modal-content">
+         <div class="modal-header">
+            <h5 class="modal-title" id="successModalLabel">Success</h5>
+         </div>
+         <div class="modal-body">
+            {% for message in messages %}
+            <p>{{ message }}</p>
+            {% endfor %}
+         </div>
+         <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+         </div>
+      </div>
+   </div>
+</div>
+
+
+
+<div id="errorModal" class="modal fade" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+   <div class="modal-dialog">
+      <div class="modal-content">
+         <div class="modal-header">
+            <h5 class="modal-title" id="errorModalLabel">Error</h5>
+         </div>
+         <div class="modal-body">
+            {% for message in messages %}
+                {% if message.tags == 'error' %}
+                    <p>{{ message }}</p>
+                {% endif %}
+            {% endfor %}
+         </div>
+         <div class="modal-footer">
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+         </div>
+      </div>
+   </div>
+</div>
+{% endif %}
+
+<script>
+   $(document).ready(function() {
+       {% if messages %}
+           {% for message in messages %}
+               {% if message.tags == 'success' %}
+                   $('#successModal').modal('show');
+               {% elif message.tags == 'error' %}
+                   $('#errorModal').modal('show');
+               {% endif %}
+           {% endfor %}
+       {% endif %}
+   });
+</script>
 
 {% endblock %}

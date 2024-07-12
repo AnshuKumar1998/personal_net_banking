@@ -18,15 +18,16 @@
             <li class="breadcrumb-item">
                <a href="{% url 'index' %}">Home</a>
             </li>
-            <li class="breadcrumb-item" aria-current="page">Log In</li>
-            <li class="breadcrumb-item" aria-current="page">Hi, {{ profile.name }}</li>
+             <li class="breadcrumb-item" aria-current="page"><a>Log In</a></li>
+            <li class="breadcrumb-item" aria-current="page"><a href="{% url 'user_account' %}">Hi, {{ profile.name }}</a></li>
+             <li class="breadcrumb-item" aria-current="page">Activity</li>
          </ol>
       </nav>
    </div>
 </div>
 
 <div class="container mt-5">
-    <h1 class="mb-4">User Dashboard</h1>
+    <h1 class="mb-4">Users Activity</h1>
     <div class="row">
         {% if fix_deposites %}
         <div class="col-md-4 mb-4">
@@ -70,6 +71,8 @@
         {% endif %}
     </div>
 </div>
+
+
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>

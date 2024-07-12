@@ -15,10 +15,11 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
 from .import views
 from django.conf import settings
 from django.conf.urls.static import static
+from django.urls import path, reverse_lazy
+from django.contrib.auth import views as auth_views
 
 
 
@@ -103,6 +104,41 @@ urlpatterns = [
     path('transfer_money/', views.transfer_money, name='transfer_money'),
 
     path('fetch-user-data/', views.fetch_user_data, name='fetch-user-data'),
+
+    path('verify_old_password/', views.verify_old_password, name='verify_old_password'),
+
+    path('change_password/', views.change_password, name='change_password'),
+
+    path('password_reset/',auth_views.PasswordResetView.as_view(
+               template_name='password_reset.html',
+               email_template_name='password_reset_email.html',
+               success_url=reverse_lazy('password_reset_done')
+           ),
+           name='password_reset'),
+
+      path('password_reset/done/',
+           auth_views.PasswordResetDoneView.as_view(
+               template_name='password_reset_done.html'
+           ),
+           name='password_reset_done'),
+
+      path('reset/<uidb64>/<token>/',
+           auth_views.PasswordResetConfirmView.as_view(
+               template_name='password_reset_confirm.html',
+               success_url=reverse_lazy('password_reset_complete')
+           ),
+           name='password_reset_confirm'),
+
+      path('reset/done/',
+           auth_views.PasswordResetCompleteView.as_view(
+               template_name='password_reset_complete.html'
+           ),
+           name='password_reset_complete'),
+
+    path('update_amount/', views.update_amount, name='update_amount'),
+    path('get_current_amount/', views.get_current_amount, name='get_current_amount'),
+    path('fetch-transaction-months/', views.fetch_transaction_months, name='fetch_transaction_months'),
+    path('delete-transactions/', views.delete_transactions, name='delete_transactions'),
 
     #------------ End User Account URL --------------------------------------------------------
 ]+ static(settings.MEDIA_URL,document_root = settings.MEDIA_ROOT)

@@ -6,6 +6,7 @@ import uuid
 
 
 
+
 # Create your models here.
 
 class Contact_us(models.Model):
@@ -240,6 +241,7 @@ class Complaint(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.complaint_id}"
+
 
 
 

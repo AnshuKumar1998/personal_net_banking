@@ -17,7 +17,13 @@
                     <li class="breadcrumb-item">
                         <a href="{% url 'index' %}">Home</a>
                     </li>
-                    <li class="breadcrumb-item" aria-current="page">Posts</li>
+                     {% if user.is_authenticated %}
+                      <li class="breadcrumb-item" aria-current="page">Login</li>
+                      <li class="breadcrumb-item" aria-current="page"><a href="/user_account/">Hi, {{ name }}</a></li>
+                      <li class="breadcrumb-item" aria-current="page">Posts</li>
+                      {% else %}
+                      <li class="breadcrumb-item" aria-current="page">Posts</li>
+                      {% endif %}
                 </ol>
             </nav>
         </div>

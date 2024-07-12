@@ -280,15 +280,6 @@
 
 
 
-
-
-
-
-
-
-
-/* custom.css */
-
 #progressOverlay {
     display: none;
     position: fixed;
@@ -310,4 +301,17 @@
 
 .progress {
     border-radius: 10px;
+}
+
+
+/* External CSS for list item */
+.current-amount {
+    list-style-type: disc;
+    margin-left: 20px; /* Adjust as needed */
+}
+
+/* Inline styles for buttons */
+.current-amount .btn-sm {
+    margin: 0;
+    padding: 5px;
 }
