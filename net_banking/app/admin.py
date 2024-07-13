@@ -1,7 +1,7 @@
 from django.contrib import admin
 # Register your models here.
 from .models import Contact_us, Account_holders, Account_Details, User_Inbox, MonthlyProfit, UserLoanDetails, \
-    UserTransactionDetails, BankWallet, FixDepositeList, FixDepositeUsers, Post, AdminMessage,Complaint
+    UserTransactionDetails, BankWallet, FixDepositeList, FixDepositeUsers, Post, AdminMessage,Complaint,CustomerListAccountModel
 from django.contrib import messages
 
 
@@ -15,6 +15,8 @@ admin.site.register(Account_Details)
 admin.site.register(User_Inbox)
 admin.site.register(MonthlyProfit)
 admin.site.register(FixDepositeUsers)
+admin.site.register(CustomerListAccountModel)
+
 
 admin.site.register(BankWallet)
 class AccountHoldersAdmin(admin.ModelAdmin):

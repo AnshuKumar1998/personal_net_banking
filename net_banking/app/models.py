@@ -244,6 +244,25 @@ class Complaint(models.Model):
 
 
 
+class CustomerListAccountModel(models.Model):
+    user = models.OneToOneField(Account_Details, on_delete=models.CASCADE, related_name='account_details')
+    username = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    customer_username = models.CharField(max_length=20)
+    customer_name = models.CharField(max_length=255)
+    customer_email = models.EmailField()
+    customer_account_no = models.IntegerField()
+    customer_mobile_no = models.CharField(max_length=12)
+
+    def __str__(self):
+        return f"{self.name}"
+
+
+
+
+
+
 
 
 

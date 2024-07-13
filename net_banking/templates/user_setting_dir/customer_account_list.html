@@ -1,0 +1,87 @@
+{% extends 'master.html' %}
+{% load static %}
+{% block body %}
+<!-- inner-banner -->
+<section class="inner-banner" id="home">
+    <div class="inner-layer">
+        <div class="container">
+        </div>
+    </div>
+</section>
+<!-- //inner-banner -->
+<!-- breadcrumb -->
+<div class="breadcrumb-w3pvt">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'index' %}">Home</a>
+                </li>
+                <li class="breadcrumb-item" aria-current="page">Log In</li>
+                <li class="breadcrumb-item" href="/user_account/" aria-current="page">Hi, {{ name }}</li>
+                <li class="breadcrumb-item" aria-current="page">Setting</li>
+                <li class="breadcrumb-item" aria-current="page">Customer Account List</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="container mt-5">
+    <h1 class="mb-4">Customer Account List</h1>
+    <button class="btn btn-primary" id="addCustomerBtn">Add Customer</button>
+
+    <!-- Popup Form -->
+    <div class="modal" id="addCustomerModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Customer</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="verifyAccountForm">
+                        <div class="form-group">
+                            <label for="account_no">Account No.</label>
+                            <input type="text" class="form-control" id="account_no" name="account_no" required>
+                        </div>
+                        <button type="button" class="btn btn-primary" id="verifyBtn">Verify</button>
+                    </form>
+                    <div id="accountDetails" style="display:none;">
+                        <p>Name: <span id="accountName"></span></p>
+                        <p>Account No: <span id="accountNumber"></span></p>
+                        <p>Mobile No: <span id="mobileNo"></span></p>
+                        <p>Email ID: <span id="emailId"></span></p>
+                        <button type="button" class="btn btn-success" id="addCustomerConfirmBtn">Add Customer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Account Table -->
+    <table class="table mt-4">
+        <thead>
+            <tr>
+                <th>Account Number</th>
+                <th>Customer Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="customerAccountList">
+            {% for account in customer_accounts %}
+            <tr data-account-no="{{ account.customer_account_no }}">
+                <td>{{ account.customer_account_no }}</td>
+                <td>{{ account.customer_name }}</td>
+                <td>
+                    <button class="btn btn-danger delete-btn2">Delete</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<br>
+<script src="{% static 'js/customer_account.js' %}"></script>
+{% endblock %}

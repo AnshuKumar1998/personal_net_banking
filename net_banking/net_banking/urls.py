@@ -139,6 +139,11 @@ urlpatterns = [
     path('get_current_amount/', views.get_current_amount, name='get_current_amount'),
     path('fetch-transaction-months/', views.fetch_transaction_months, name='fetch_transaction_months'),
     path('delete-transactions/', views.delete_transactions, name='delete_transactions'),
+    path('account_list/', views.customer_account_list, name='account_list'),
+    path('delete_customer/<int:account_no>/', views.delete_customer, name='delete_customer'),
+    path('verify_account/', views.verify_account, name='verify_account'),
+    path('add_customer/', views.add_customer, name='add_customer'),
+    path('api/get_customer_accounts/', views.get_customer_accounts, name='get_customer_accounts'),
 
     #------------ End User Account URL --------------------------------------------------------
 ]+ static(settings.MEDIA_URL,document_root = settings.MEDIA_ROOT)

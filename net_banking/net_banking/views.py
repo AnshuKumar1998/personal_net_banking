@@ -10,7 +10,7 @@ from django.contrib.auth.hashers import make_password
 from django.db import transaction
 from django.db.models import F, ExpressionWrapper, FloatField, Q
 from django.http import JsonResponse, HttpResponse
-from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit,UserLoanDetails,UserTransactionDetails,BankWallet,FixDepositeList,FixDepositeUsers,Post,AdminMessage,Complaint
+from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit,UserLoanDetails,UserTransactionDetails,BankWallet,FixDepositeList,FixDepositeUsers,Post,AdminMessage,Complaint,CustomerListAccountModel
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
@@ -1066,4 +1066,93 @@ def delete_transactions(request):
             return JsonResponse({'success': True})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+def customer_account_list(request):
+    profile_holder = get_object_or_404(Account_holders, user=request.user)
+    #customer_accounts = CustomerListAccountModel.objects.all()  # Fetch all customer accounts
+    customer_accounts = CustomerListAccountModel.objects.filter(email=profile_holder.email)
+    context = {
+        'name': profile_holder.name,
+        'customer_accounts': customer_accounts  # Pass customer accounts to the template
+    }
+    return render(request, 'user_setting_dir/customer_account_list.html', context)
+
+def verify_account(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        account_no = data.get('account_no', None)
+        if account_no is not None:
+            try:
+                account = Account_Details.objects.get(account_no=account_no)
+                data = {
+                    'exists': True,
+                    'name': account.name,
+                    'account_no': account.account_no,
+                    'mobile_no': account.mobile,
+                    'email_id': account.email
+                }
+            except Account_Details.DoesNotExist:
+                data = {'exists': False}
+            return JsonResponse(data)
+    return JsonResponse({'error': 'Invalid request'})
+
+def add_customer(request):
+    if request.method == 'POST':
+        profile_holder = get_object_or_404(Account_holders, user=request.user)
+        data = json.loads(request.body)
+        account_no = data.get('account_no', None)
+        name = data.get('name', None)
+        mobile_no = data.get('mobile_no', None)
+        email_id = data.get('email_id', None)
+
+        if account_no is not None and name is not None and mobile_no is not None and email_id is not None:
+            try:
+                account = Account_Details.objects.get(account_no=account_no)
+                # Assuming CustomerAccount is your model for storing customer details
+                print("hello")
+                print(account.mobile)
+                customer = CustomerListAccountModel.objects.create(
+                    user=account,
+                    username=profile_holder.username,
+                    name=profile_holder.name,
+                    email=profile_holder.email,
+                    customer_username=account.username,
+                    customer_account_no=account.account_no,
+                    customer_name=account.name,
+                    customer_mobile_no=account.mobile,
+                    customer_email=account.email
+                )
+                inbox_message(profile_holder, "Add Customer", f"{account.name} had successfully added to the list.")
+                return JsonResponse({'success': True})
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': str(e)})
+        else:
+            return JsonResponse({'success': False, 'error': 'Missing required fields'})
+    else:
+        return JsonResponse({'error': 'Invalid request method'})
+
+@csrf_exempt
+def delete_customer(request, account_no):
+    if request.method == "DELETE":
+        try:
+            profile_holder = get_object_or_404(Account_holders, user=request.user)
+            customer = CustomerListAccountModel.objects.get(customer_account_no=account_no)
+            customer.delete()
+            inbox_message(profile_holder, "Delete Custoter",f"{customer.name} had deleted from the list.")
+            return JsonResponse({"success": True})
+        except CustomerListAccountModel.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Customer not found"})
+    return JsonResponse({"success": False, "error": "Invalid request method"})
+
+def get_customer_accounts(request):
+    if request.method == 'GET':
+        profile_holder = get_object_or_404(Account_holders, user=request.user)
+        accounts = CustomerListAccountModel.objects.filter(email=profile_holder.email).values('customer_account_no', 'customer_name', 'customer_email', 'customer_mobile_no')
+        #accounts = CustomerListAccountModel.objects.all().values('customer_account_no', 'customer_name', 'customer_email', 'customer_mobile_no')
+        accounts_list = list(accounts)
+        return JsonResponse(accounts_list, safe=False)
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
 
