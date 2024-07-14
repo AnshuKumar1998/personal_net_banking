@@ -80,7 +80,7 @@ class User_Inbox(models.Model):
     mobile = models.CharField(max_length=15)
     subject = models.CharField(max_length=50)
     content = models.CharField(max_length=200)
-    date = models.DateField()
+    date = models.DateTimeField()
 
     def __str__(self):
         return self.email

@@ -38,7 +38,16 @@ def generate_unique_account_number():
         if not Account_Details.objects.filter(account_no=account_number).exists():
             return account_number
 
-def inbox_message(account_holder,subject,content):
+
+def today_date_time():
+    kolkata_timezone = pytz.timezone('Asia/Kolkata')
+    kolkata_time = datetime.now(kolkata_timezone)
+    formatted_date_time = kolkata_time.strftime('%Y-%m-%d %I:%M %p')
+    return formatted_date_time
+
+def inbox_message(account_holder, subject, content):
+    formatted_date_time_str = today_date_time()
+    date_obj = datetime.strptime(formatted_date_time_str, '%Y-%m-%d %I:%M %p')
     User_Inbox.objects.create(
         user=account_holder,
         username=account_holder.username,
@@ -47,8 +56,9 @@ def inbox_message(account_holder,subject,content):
         mobile=account_holder.mobile,
         subject=subject,
         content=content,
-        date=today_date()
+        date=date_obj
     )
+
 
 
 def transaction_slip(account_holder,transaction_id,withdraw,section,section_no,amount,method,status):

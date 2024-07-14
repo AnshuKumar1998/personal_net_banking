@@ -1046,8 +1046,10 @@ def get_current_amount(request):
 
 
 def fetch_transaction_months(request):
-    transactions = UserTransactionDetails.objects.values('transaction_date').annotate(count=Count('transaction_date'))
+    profile_holder = get_object_or_404(Account_holders, user=request.user)
+    transactions = UserTransactionDetails.objects.filter(email=profile_holder.email).values('transaction_date').annotate(count=Count('transaction_date'))
     months = {transaction['transaction_date'].strftime('%Y-%m') for transaction in transactions}
+
     return JsonResponse({'months': sorted(months)})
 
 
