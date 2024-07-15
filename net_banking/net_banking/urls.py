@@ -144,6 +144,11 @@ urlpatterns = [
     path('verify_account/', views.verify_account, name='verify_account'),
     path('add_customer/', views.add_customer, name='add_customer'),
     path('api/get_customer_accounts/', views.get_customer_accounts, name='get_customer_accounts'),
+    path('transaction_statement/', views.user_transaction_statement, name='transaction_statement'),
+    path('delete-transaction/<int:id>/', views.delete_transaction, name='delete_transaction'),
+    path('send_mail/', views.send_mail_view, name='send_mail'),
+    path('get_account_email/', views.get_account_email, name='get_account_email'),
+
 
     #------------ End User Account URL --------------------------------------------------------
 ]+ static(settings.MEDIA_URL,document_root = settings.MEDIA_ROOT)

@@ -138,7 +138,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'anshukr5691@gmail.com'
-EMAIL_HOST_PASSWORD = 'ajpo wglz qris yjai'
+EMAIL_HOST_PASSWORD = 'wwpfrmfgtbskyina'
 DEFAULT_FROM_EMAIL = 'anshukr5691@gmail.com'
 
 

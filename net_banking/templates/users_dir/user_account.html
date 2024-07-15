@@ -425,6 +425,9 @@
         <div class="mt-3">
             <h4>Transaction History</h4>
             <button type="button" class="btn btn-info" onclick="printTable()">Print Statement</button>
+           <button type="button" class="btn btn-warning ml-2"  onclick="window.location.href='{% url 'transaction_statement' %}'">View All</button>
+
+
             <button type="button" class="btn btn-danger" onclick="openDeletePopup()">Delete</button><br>
             <table id="transaction-table" class="table table-bordered">
                 <thead>

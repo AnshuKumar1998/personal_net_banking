@@ -3,7 +3,6 @@ import json
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.urls import reverse
-from datetime import datetime
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
@@ -23,6 +22,13 @@ from django.core.paginator import Paginator
 from django.contrib.auth.hashers import check_password
 from django.views.decorators.http import require_POST
 from django.db.models import Count
+from django.core.mail import EmailMessage
+from io import BytesIO
+from reportlab.lib.pagesizes import landscape, letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.lib import colors
+from django.utils.dateformat import format
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -1030,6 +1036,7 @@ def update_amount(request):
         # Update current amount
         profile_data.current_amt += amount
         profile_data.save()
+        transaction_slip(profile_holder, 000, "Credited", "Add Money", "self", amount, "Credit Card", "Complete")
 
         # Send inbox message
         inbox_message(profile_holder, "Credited Money", f"Money Rs. {amount} Successfully credited to your account")
@@ -1155,6 +1162,112 @@ def get_customer_accounts(request):
         return JsonResponse(accounts_list, safe=False)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
+@login_required
+def user_transaction_statement(request):
+    profile_holder = get_object_or_404(Account_holders, user=request.user)
+    transactions = UserTransactionDetails.objects.filter(username=request.user).order_by('-id')
+
+    # Filtering
+    # Filtering
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    transaction_type_filter = request.GET.get('transaction_type')
+    status_filter = request.GET.get('status')
+    sort_order = request.GET.get('sort_order')
+
+    if start_date and end_date:
+        transactions = transactions.filter(date__range=[start_date, end_date])
+    if transaction_type_filter:
+        transactions = transactions.filter(transaction_type=transaction_type_filter)
+    if status_filter:
+        transactions = transactions.filter(status=status_filter)
+    if sort_order:
+        transactions = transactions.order_by(sort_order)
 
 
+    paginator = Paginator(transactions, 12)  # Show 30 transactions per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    context = {
+        'name':profile_holder.name,
+        'page_obj': page_obj,
+        'start_date': start_date,
+        'end_date': end_date,
+        'transaction_type_filter': transaction_type_filter,
+        'status_filter': status_filter,
+        'sort_order': sort_order
+    }
+    return render(request, 'users_dir/user_transaction_statement.html',context)
 
+
+@login_required
+def delete_transaction(request, id):
+    transaction = UserTransactionDetails.objects.get(id=id, username=request.user)
+    transaction.delete()
+    return redirect('transaction_statement')
+
+
+def get_account_email(request):
+    if request.method == 'GET':
+        account_holder = Account_holders.objects.get(user=request.user)
+        return JsonResponse({'email': account_holder.email})
+    return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+
+def send_mail_view(request):
+    if request.method == 'POST':
+        account_holder = Account_holders.objects.get(user=request.user)
+        data = json.loads(request.body)
+        email = data.get('email')
+        if email:
+            try:
+                # Fetch transaction data for the logged-in user
+                transactions = UserTransactionDetails.objects.filter(email=account_holder.email)
+                # Prepare data for the PDF table
+                table_data = [['Transaction ID', 'Transaction Date', 'Type', 'Credited By', 'Amount', 'Payment Method',
+                               'Payment Status', 'Description']]
+                for transaction in transactions:
+                    # Format the transaction date
+                    formatted_date = format(transaction.transaction_date, 'M d, Y h:i A')
+                    table_data.append(
+                        [transaction.transaction_id, formatted_date, transaction.transaction_type, transaction.section,
+                         transaction.amount, transaction.payment_method, transaction.payment_status,
+                         transaction.description])
+
+                pdf_file = generate_pdf(table_data)
+                send_table_in_email(email, pdf_file)
+                return JsonResponse({'message': 'Mail sent successfully'})
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
+        else:
+            return JsonResponse({'error': 'Email not provided'}, status=400)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+def generate_pdf(table_data):
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
+    table = Table(table_data)
+    style = TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ])
+    table.setStyle(style)
+    elements = [table]
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
+
+
+def send_table_in_email(email, pdf_file):
+    subject = 'Your Transaction Statement Of Mini Bank'
+    message = 'Please download attached your transaction statement.'
+    email_message = EmailMessage(subject, message, 'anshumk123@gmail.com', [email])
+    email_message.attach('transaction_statement.pdf', pdf_file.read(), 'application/pdf')
+    email_message.send()
