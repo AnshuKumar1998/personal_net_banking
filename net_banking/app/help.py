@@ -1,10 +1,11 @@
 # help.py
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import random
 import pytz
 from dateutil.relativedelta import relativedelta
-from .models import UserLoanDetails, Account_Details, User_Inbox, UserTransactionDetails
+from .models import UserLoanDetails, Account_Details, User_Inbox, UserTransactionDetails,ATMCardModel
+from django.utils import timezone
 
 
 def today_date():
@@ -79,3 +80,44 @@ def transaction_slip(account_holder,transaction_id,withdraw,section,section_no,a
         payment_status=status,
         description=""
     )
+
+
+def generate_unique_card_number():
+    while True:
+        card_number = ''.join([str(random.randint(0, 9)) for _ in range(16)])
+        if not ATMCardModel.objects.filter(card_number=card_number).exists():
+            return card_number
+
+def generate_cvv():
+    return ''.join([str(random.randint(0, 9)) for _ in range(3)])
+
+def generate_pin():
+    return ''.join([str(random.randint(0, 9)) for _ in range(4)])
+def create_atm_card(account_holder, account_details):
+
+    username = account_holder.username
+    name = account_holder.name
+    email = account_holder.email
+    account_no = account_details.account_no
+    cardholder_name = account_holder.name
+    pin = generate_pin()
+    card_number = generate_unique_card_number()
+    cvv = generate_cvv()
+    expiration_date = timezone.now().date() + timedelta(days=5*365)  # 5 years from today
+
+    atm_card = ATMCardModel(
+        user=account_details,
+        username=username,
+        name=name,
+        email=email,
+        account_no=account_no,
+        card_number=card_number,
+        cardholder_name=cardholder_name,
+        expiration_date=expiration_date,
+        cvv=cvv,
+        pin=pin
+    )
+    atm_card.save()
+
+    return True # Replace with your success URL
+

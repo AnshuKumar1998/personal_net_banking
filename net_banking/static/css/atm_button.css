@@ -1,0 +1,56 @@
+/* Button styling */
+.btn-circle {
+  position: relative;
+  width: 50px; /* Button width */
+  height: 26px; /* Button height */
+  border: 2px solid transparent; /* Transparent border by default */
+  border-radius: 13px; /* Half of height to make it circular */
+  background-color: #fff; /* Default white background */
+  cursor: pointer; /* Default cursor */
+  outline: none;
+  transition: background-color 0.3s, border-color 0.3s;
+  display: inline-flex; /* Align it in a row layout */
+  align-items: center; /* Center the slider vertically */
+}
+
+/* Slider styles */
+.slider {
+  position: absolute;
+  top: 50%; /* Center vertically */
+  left: 2px; /* Space from the left edge */
+  width: 22px; /* Circle width */
+  height: 22px; /* Circle height */
+  border-radius: 50%; /* Make it circular */
+  background-color: #fff; /* White circle */
+  transform: translateY(-50%); /* Center vertically */
+  transition: transform 0.3s, background-color 0.3s;
+}
+
+/* Active (enabled) state */
+.btn-circle.active {
+  background-color: red; /* Red background when active */
+  border: 2px solid red; /* Red border when active */
+}
+
+.btn-circle.active .slider {
+  transform: translateX(24px) translateY(-50%); /* Slide the circle to the right and keep it centered */
+  background-color: #fff; /* White circle remains white */
+}
+
+/* Disabled state */
+.btn-circle.disabled {
+  background-color: green; /* Green background when disabled */
+  border: 2px solid green; /* Green border when disabled */
+  cursor: pointer; /* Pointer cursor when in disabled state (if you want to keep it interactive visually) */
+}
+
+.btn-circle.disabled .slider {
+  transform: translateY(-50%); /* Keep it centered vertically */
+  background-color: #fff; /* White circle remains white */
+}
+
+/* Container styling for alignment */
+
+.row {
+  width: 100%;
+}

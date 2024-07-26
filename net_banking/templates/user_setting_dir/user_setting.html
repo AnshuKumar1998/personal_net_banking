@@ -32,6 +32,9 @@
        <a href="#" class="list-group-item list-group-item-action" id="changePasswordLink">Change Password</a>
         <a href="#" class="list-group-item list-group-item-action" id="deleteAccountLink">Delete Account</a>
         <a class="list-group-item list-group-item-action" href="/account_list/">Customer Account List</a>
+        <a class="list-group-item list-group-item-action" href="/transaction_statement/">Statement Transaction</a>
+        <a class="list-group-item list-group-item-action" href="/user_profile/">User Profile</a>
+        <a class="list-group-item list-group-item-action" href="#" id="deleteonlyModal" >Deactivate My Account</a>
     </div>
 </div>
 <br>
@@ -55,6 +58,8 @@
     </div>
   </div>
 </div>
+
+<!--------  account delete ---------------->
 
 <!-- Change Password Modal -->
 <div id="changePasswordModal" class="modal fade" tabindex="-1">
@@ -166,7 +171,7 @@
         </div>
     </div>
 </div>
-
+<script src="{% static 'js/delete_account.js' %}"></script>
 <script>
    $(document).ready(function() {
        {% if messages %}
@@ -310,5 +315,5 @@
        }
    }
 </script>
-<script src="{% static 'js/delete_account.js' %}"></script>
+
 {% endblock %}

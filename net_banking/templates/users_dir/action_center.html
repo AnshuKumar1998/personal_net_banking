@@ -1,0 +1,193 @@
+{% extends 'master.html' %}
+{% load static %}
+{% block body %}
+<!-- inner-banner -->
+<section class="inner-banner" id="home">
+   <div class="inner-layer">
+      <div class="container">
+      </div>
+   </div>
+</section>
+<!-- //inner-banner -->
+
+<!-- breadcrumb -->
+<div class="breadcrumb-w3pvt">
+   <div class="container">
+      <nav aria-label="breadcrumb">
+         <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+               <a href="{% url 'index' %}">Home</a>
+            </li>
+            <li class="breadcrumb-item"><a href="{% url 'login' %}">Log In</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'user_account' %}">Hi, {{ name }}</a></li>
+            <li class="breadcrumb-item active"><a>Action Center</a></li>
+         </ol>
+      </nav>
+   </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+            <div class="position-sticky">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" id="new-action-link">New Action</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="pending-action-link">Pending Action</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="completed-action-link">Completed Action</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="block-action-link">Block Action</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2" id="action-header">Action Center</h1>
+            </div>
+            <div id="content">
+                <!-- Content will be dynamically updated here -->
+                {% for action in actions %}
+                    <div class="action-item" data-id="{{ action.id }}" data-status="{{ action.status }}" data-expire="{{ action.expire_date }}">
+                        <h3>{{ action.subject }}</h3>
+                        <p>{{ action.content|truncatewords:20 }}</p>
+                        <a href="#" class="read-more" data-id="{{ action.id }}" data-subject="{{ action.subject }}" data-content="{{ action.content }}" data-expire="{{ action.expire_date }}">Read More</a>
+                        <p class="expire-date" style="display: none; color: red;">Expire Date: {{ action.expire_date }}</p> <!-- Placeholder for expiration date -->
+                    </div>
+                {% endfor %}
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="actionModal" tabindex="-1" aria-labelledby="actionModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="actionModalLabel">Action Subject</h5>
+        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <h4 id="modalSubject"></h4>
+        <p id="modalContent"></p>
+        <p><strong>Expire Date:</strong> <span id="modalExpireDate" style="color: red;"></span></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<br><br>
+
+<!-- Script File JS -->
+<script src="{% static 'js/action_center.js' %}"></script>
+
+
+<style>
+body {
+    font-size: .875rem;
+}
+
+#sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-right: 1px solid #ddd;
+    padding: 10px 20px;  /* Add padding to the sidebar */
+}
+
+#sidebar .nav-link {
+    color: black !important;  /* Ensure the font color is black */
+    padding-left: 10px; /* Add space to the left side of each link */
+    padding-right: 10px; /* Add space to the right side of each link */
+}
+
+#sidebar .nav-link.active {
+    font-weight: bold;
+    color: #007bff !important;
+}
+
+.action-item {
+    margin-bottom: 20px; /* Add space between action list items */
+    padding: 10px; /* Add padding to action items */
+    border: 1px solid #ddd; /* Add border to action items */
+    border-radius: 5px; /* Round corners of action items */
+    background-color: #f9f9f9; /* Background color for action items */
+}
+
+.action-item h3 {
+    margin: 0 0 10px 0; /* Margin for heading */
+}
+
+.action-item p {
+    margin: 0 0 10px 0; /* Margin for paragraph */
+}
+
+.expire-date {
+    color: red; /* Color for expiration date text */
+    margin-top: 10px; /* Space above the expiration date */
+}
+
+.modal-dialog {
+    max-width: 80%; /* Increase the width of the popup message */
+}
+</style>
+
+
+
+<script>
+  // Handle the modal display
+  $('#actionModal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget); // Button that triggered the modal
+    var subject = button.data('subject'); // Extract info from data-* attributes
+    var content = button.data('content');
+    var expireDate = button.data('expire');
+
+    var modal = $(this);
+    modal.find('#modalSubject').text(subject);
+    modal.find('#modalContent').text(content);
+    modal.find('#modalExpireDate').text(expireDate);
+  });
+
+  // Handle the sidebar click
+  $('#sidebar a').on('click', function(event) {
+    event.preventDefault(); // Prevent default anchor click behavior
+    var actionType = $(this).text();
+    $('#action-header').text(actionType + ' List');
+    // Additional logic to filter content can be added here
+  });
+
+  // Show expiration date when "Read More" is clicked
+  $('.read-more').on('click', function(event) {
+    event.preventDefault();
+    var expireDate = $(this).data('expire');
+    $(this).siblings('.expire-date').text('Expire Date: ' + expireDate).show();
+  });
+
+  // Show expiration date when the page loads if necessary
+  $(document).ready(function() {
+    $('.action-item').each(function() {
+      var expireDate = $(this).data('expire');
+      if (expireDate) {
+        $(this).find('.expire-date').text('Expire Date: ' + expireDate).show();
+      }
+    });
+  });
+</script>
+
+{% endblock %}

@@ -148,6 +148,12 @@ urlpatterns = [
     path('delete-transaction/<int:id>/', views.delete_transaction, name='delete_transaction'),
     path('send_mail/', views.send_mail_view, name='send_mail'),
     path('get_account_email/', views.get_account_email, name='get_account_email'),
+    path('user_profile/', views.user_profile, name='user_profile'),
+    path('atm_card_view/', views.atm_card_view, name='atm_card_view'),
+    path('action_center/', views.action_center, name='action_center'),
+    path('action/<int:id>/', views.action_detail, name='action_detail'),
+    path('update_service/', views.update_service, name='update_service'),
+
 
 
     #------------ End User Account URL --------------------------------------------------------

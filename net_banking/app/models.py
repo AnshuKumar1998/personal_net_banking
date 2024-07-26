@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 import uuid
+from django.utils import timezone
 
 
 
@@ -257,6 +258,54 @@ class CustomerListAccountModel(models.Model):
 
     def __str__(self):
         return f"{self.name}"
+
+
+
+class ATMCardModel(models.Model):
+    user = models.OneToOneField('Account_Details', on_delete=models.CASCADE, related_name='atm_card_details')
+    username = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    account_no = models.IntegerField(default=0)
+    card_number = models.CharField(max_length=16, unique=True)
+    cardholder_name = models.CharField(max_length=100)
+    expiration_date = models.DateField()
+    cvv = models.CharField(max_length=3)
+    pin = models.CharField(max_length=4)
+    net_banking_service = models.BooleanField(default=False)
+    withdraw_service = models.BooleanField(default=False)
+    atm_card_status = models.BooleanField(default=False)
+    atm_card_activation = models.BooleanField(default=False)
+    description = models.CharField(max_length=250)
+
+    def __str__(self):
+        return f"{self.cardholder_name} - {self.card_number}"
+
+
+class ActionCenterModel(models.Model):
+    ACTION_STATUSES = [
+        ('new', 'New Action'),
+        ('pending', 'Pending Action'),
+        ('completed', 'Completed Action'),
+        ('block','Blocked Action')
+    ]
+    user = models.ForeignKey('Account_Details', on_delete=models.CASCADE, related_name='action_center')
+    username = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    subject = models.CharField(max_length=255)
+    content = models.TextField()
+    status = models.CharField(max_length=10, choices=ACTION_STATUSES)
+    description = models.CharField(max_length=250)
+    action_status=models.BooleanField(default=False)
+    issue_date = models.DateTimeField(default=timezone.now)
+    expire_date = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return self.subject
+
+
+
 
 
 

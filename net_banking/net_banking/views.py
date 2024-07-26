@@ -9,11 +9,11 @@ from django.contrib.auth.hashers import make_password
 from django.db import transaction
 from django.db.models import F, ExpressionWrapper, FloatField, Q
 from django.http import JsonResponse, HttpResponse
-from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit,UserLoanDetails,UserTransactionDetails,BankWallet,FixDepositeList,FixDepositeUsers,Post,AdminMessage,Complaint,CustomerListAccountModel
+from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit,UserLoanDetails,UserTransactionDetails,BankWallet,FixDepositeList,FixDepositeUsers,Post,AdminMessage,Complaint,CustomerListAccountModel, ATMCardModel,ActionCenterModel
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
-from app.help import today_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number, inbox_message,transaction_slip
+from app.help import today_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number, inbox_message,transaction_slip, create_atm_card
 from django.contrib.auth.models import User
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -256,6 +256,7 @@ def activate(request):
             last_login= timezone.now(),
             aadhar_no=request.POST['aadharno']
         )
+        create_atm_card(account_holder,account_details)
         account_holder.account_status = 'Active'  # Example: Updating account_status column
         account_holder.save()
         inbox_message(account_holder,"Account Activation","Your account has been successfully activated.")
@@ -1271,3 +1272,79 @@ def send_table_in_email(email, pdf_file):
     email_message = EmailMessage(subject, message, 'anshumk123@gmail.com', [email])
     email_message.attach('transaction_statement.pdf', pdf_file.read(), 'application/pdf')
     email_message.send()
+
+@login_required
+def user_profile(request):
+    profile_holder = get_object_or_404(Account_holders, user=request.user)
+    account_details = get_object_or_404(Account_Details, username=profile_holder.username)
+    card_details = ATMCardModel.objects.get(account_no=account_details.account_no)
+
+    context = {
+        'name': profile_holder.name,
+        'account_details': account_details,
+        'profile_holder': profile_holder,
+        'card_details': card_details,
+        'net_banking_service': card_details.net_banking_service,
+        'withdraw_service': card_details.withdraw_service,
+        'atm_card_status': card_details.atm_card_status,
+        'atm_card_activation': card_details.atm_card_activation,
+    }
+
+    return render(request, 'users_dir/user_profile.html',context)
+
+def atm_card_view(request):
+    profile_holder = get_object_or_404(Account_holders, user=request.user)
+    account_details = get_object_or_404(Account_Details, username=profile_holder.username)
+    card_details = ATMCardModel.objects.get(account_no=account_details.account_no)
+    chunks = [card_details.card_number[i:i + 4] for i in range(0, len(card_details.card_number), 4)]
+
+    context = {
+        'card_details':card_details,
+        'chunks':chunks
+    }
+    return render(request, 'users_dir/atm_card_view.html',context)
+
+
+def action_center(request):
+    profile_holder = get_object_or_404(Account_holders, user=request.user)
+    actions = ActionCenterModel.objects.all()
+    context ={
+        'name':profile_holder.name,
+        'actions': actions
+    }
+    return render(request, 'users_dir/action_center.html',context)
+
+def action_detail(request, id):
+    action = ActionCenterModel.objects.get(id=id)
+    data = {
+        'subject': action.subject,
+        'content': action.content,
+    }
+    return JsonResponse(data)
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
+def update_service(request):
+    if request.method == 'POST':
+        service_type = request.POST.get('service_type')
+        enable = request.POST.get('enable') == 'true'
+        account_no = request.POST.get('account_no')
+
+        try:
+            card_details = ATMCardModel.objects.get(account_no=account_no)
+            if service_type == 'atm_card_activation':
+                card_details.atm_card_activation = enable
+            elif service_type == 'atm_card_status':
+                card_details.atm_card_status = enable
+            elif service_type == 'withdraw_service':
+                card_details.withdraw_service = enable
+            elif service_type == 'net_banking_service':
+                card_details.net_banking_service = enable
+            card_details.save()
+            return JsonResponse({'status': 'success'})
+        except ATMCardModel.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Account not found'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
