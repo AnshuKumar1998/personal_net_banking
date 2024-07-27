@@ -153,6 +153,9 @@ urlpatterns = [
     path('action_center/', views.action_center, name='action_center'),
     path('action/<int:id>/', views.action_detail, name='action_detail'),
     path('update_service/', views.update_service, name='update_service'),
+    path('make_transaction/', views.make_otp_transaction, name='make_transaction'),
+
+
 
 
 

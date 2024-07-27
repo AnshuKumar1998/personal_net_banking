@@ -275,7 +275,7 @@ class ATMCardModel(models.Model):
     net_banking_service = models.BooleanField(default=False)
     withdraw_service = models.BooleanField(default=False)
     atm_card_status = models.BooleanField(default=False)
-    atm_card_activation = models.BooleanField(default=False)
+    money_transfer_service = models.BooleanField(default=False)
     description = models.CharField(max_length=250)
 
     def __str__(self):
@@ -303,6 +303,33 @@ class ActionCenterModel(models.Model):
 
     def __str__(self):
         return self.subject
+
+
+class TransactionSetByOtp(models.Model):
+    ACTION_STATUSES = [
+        (1, 'Active'),
+        (0, 'Disable')
+    ]
+    user = models.ForeignKey(Account_Details, on_delete=models.CASCADE, related_name='tarnsaction_by_otp')
+    username = models.CharField(max_length=100)
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    mobile = models.CharField(max_length=15)
+    transactionbyotp_id = models.CharField(max_length=20, default=0)
+    otp = models.CharField(max_length=100)
+    account_no = models.IntegerField(default=0)
+    amount = models.IntegerField()
+    atm_card_number = models.CharField(max_length=20)
+    transaction_status = models.BooleanField(default=True)
+    transaction_action = models.BooleanField(default=True)
+    issue_date = models.DateTimeField(default=timezone.now)
+    expire_date = models.DateTimeField(default=timezone.now)
+    description = models.CharField(max_length=200)
+
+    def __str__(self):
+        return f"{self.name} - {self.atm_card_number} - {self.amount} - {self.transaction_status}"
+
+
 
 
 

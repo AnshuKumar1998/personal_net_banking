@@ -9,11 +9,11 @@ from django.contrib.auth.hashers import make_password
 from django.db import transaction
 from django.db.models import F, ExpressionWrapper, FloatField, Q
 from django.http import JsonResponse, HttpResponse
-from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit,UserLoanDetails,UserTransactionDetails,BankWallet,FixDepositeList,FixDepositeUsers,Post,AdminMessage,Complaint,CustomerListAccountModel, ATMCardModel,ActionCenterModel
+from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit,UserLoanDetails,UserTransactionDetails,BankWallet,FixDepositeList,FixDepositeUsers,Post,AdminMessage,Complaint,CustomerListAccountModel, ATMCardModel,ActionCenterModel,TransactionSetByOtp
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
-from app.help import today_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number, inbox_message,transaction_slip, create_atm_card
+from app.help import today_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number, inbox_message,transaction_slip, create_atm_card,generate_otp,today_date_time,generate_unique_transactionByOtp_id
 from django.contrib.auth.models import User
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -28,7 +28,8 @@ from reportlab.lib.pagesizes import landscape, letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib import colors
 from django.utils.dateformat import format
-from datetime import datetime
+from django.core.exceptions import ObjectDoesNotExist
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -1278,6 +1279,8 @@ def user_profile(request):
     profile_holder = get_object_or_404(Account_holders, user=request.user)
     account_details = get_object_or_404(Account_Details, username=profile_holder.username)
     card_details = ATMCardModel.objects.get(account_no=account_details.account_no)
+    transactions_by_otp = TransactionSetByOtp.objects.filter(user=account_details)
+
 
     context = {
         'name': profile_holder.name,
@@ -1287,7 +1290,8 @@ def user_profile(request):
         'net_banking_service': card_details.net_banking_service,
         'withdraw_service': card_details.withdraw_service,
         'atm_card_status': card_details.atm_card_status,
-        'atm_card_activation': card_details.atm_card_activation,
+        'money_transfer_service': card_details.money_transfer_service,
+        'transactions_by_otp':transactions_by_otp,
     }
 
     return render(request, 'users_dir/user_profile.html',context)
@@ -1323,9 +1327,6 @@ def action_detail(request, id):
     return JsonResponse(data)
 
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-
 @csrf_exempt
 def update_service(request):
     if request.method == 'POST':
@@ -1335,16 +1336,73 @@ def update_service(request):
 
         try:
             card_details = ATMCardModel.objects.get(account_no=account_no)
-            if service_type == 'atm_card_activation':
-                card_details.atm_card_activation = enable
-            elif service_type == 'atm_card_status':
-                card_details.atm_card_status = enable
-            elif service_type == 'withdraw_service':
-                card_details.withdraw_service = enable
-            elif service_type == 'net_banking_service':
-                card_details.net_banking_service = enable
+            enable_value = 1 if enable else 0
+
+            if service_type == 'atm_card_status':
+                card_details.atm_card_status = enable_value
+                if not enable:
+                    card_details.money_transfer_service = 0
+                    card_details.withdraw_service = 0
+                    card_details.net_banking_service = 0
+            elif service_type == 'money_transfer_service' and card_details.atm_card_status:
+                card_details.money_transfer_service = enable_value
+            elif service_type == 'withdraw_service' and card_details.atm_card_status:
+                card_details.withdraw_service = enable_value
+            elif service_type == 'net_banking_service' and card_details.atm_card_status:
+                card_details.net_banking_service = enable_value
+
             card_details.save()
-            return JsonResponse({'status': 'success'})
+            return JsonResponse({
+                'status': 'success',
+                'atm_card_status': card_details.atm_card_status,
+                'money_transfer_service': card_details.money_transfer_service,
+                'withdraw_service': card_details.withdraw_service,
+                'net_banking_service': card_details.net_banking_service,
+            })
         except ATMCardModel.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Account not found'})
     return JsonResponse({'status': 'error', 'message': 'Invalid request'})
+
+
+@csrf_exempt
+def make_otp_transaction(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        amount = float(data.get('amount'))
+        pin = data.get('pin')
+        account_no = data.get('account_no')
+
+        try:
+            card_details = ATMCardModel.objects.get(account_no=account_no)
+            account_details = Account_Details.objects.get(account_no=account_no)
+
+            if card_details.pin == pin:
+                formatted_date_time_str = today_date_time()
+                kolkata_time = datetime.strptime(formatted_date_time_str, '%Y-%m-%d %I:%M %p')
+                expire_date = kolkata_time + timedelta(minutes=10)
+                date_obj = datetime.strptime(formatted_date_time_str, '%Y-%m-%d %I:%M %p')
+                otp = generate_otp()
+                transaction = TransactionSetByOtp.objects.create(
+                    user=account_details,
+                    username=card_details.username,
+                    name=card_details.name,
+                    email=card_details.email,
+                    mobile=account_details.mobile,  # Assuming mobile is a field in Account_Details
+                    transactionbyotp_id=generate_unique_transactionByOtp_id(),
+                    otp=otp,  # You would generate and handle OTP appropriately
+                    account_no=account_details.account_no,
+                    amount=amount,
+                    transaction_action=1,
+                    atm_card_number=card_details.card_number,
+                    transaction_status=False,
+                    issue_date=date_obj,
+                    expire_date=expire_date,
+                    description='Transaction completed'
+                )
+                return JsonResponse({'status': 'success'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Invalid PIN'})
+        except ATMCardModel.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Account not found'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
+

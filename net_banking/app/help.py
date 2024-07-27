@@ -4,8 +4,9 @@ from datetime import datetime, timedelta
 import random
 import pytz
 from dateutil.relativedelta import relativedelta
-from .models import UserLoanDetails, Account_Details, User_Inbox, UserTransactionDetails,ATMCardModel
+from .models import UserLoanDetails, Account_Details, User_Inbox, UserTransactionDetails,ATMCardModel,TransactionSetByOtp
 from django.utils import timezone
+import string
 
 
 def today_date():
@@ -120,4 +121,19 @@ def create_atm_card(account_holder, account_details):
     atm_card.save()
 
     return True # Replace with your success URL
+
+def generate_unique_transactionByOtp_id():
+    while True:
+        # Generate random 6-digit number (adjust as needed)
+        transactionbyotp_id = random.randint(100000, 999999)  # Random number between 100000 and 999999
+
+        # Check if loan ID already exists in database
+        if not TransactionSetByOtp.objects.filter(transactionbyotp_id=transactionbyotp_id).exists():
+            return transactionbyotp_id
+
+def generate_otp(length=6):
+    """Generate a unique OTP consisting of numbers and letters."""
+    characters = string.ascii_uppercase + string.digits
+    otp = ''.join(random.choice(characters) for _ in range(length))
+    return otp
 

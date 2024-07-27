@@ -1,7 +1,8 @@
 from django.contrib import admin
 # Register your models here.
 from .models import Contact_us, Account_holders, Account_Details, User_Inbox, MonthlyProfit, UserLoanDetails, \
-    UserTransactionDetails, BankWallet, FixDepositeList, FixDepositeUsers, Post, AdminMessage,Complaint,CustomerListAccountModel, ATMCardModel,ActionCenterModel
+    UserTransactionDetails, BankWallet, FixDepositeList, FixDepositeUsers, Post, AdminMessage,Complaint,CustomerListAccountModel, ATMCardModel,ActionCenterModel, \
+TransactionSetByOtp
 from django.contrib import messages
 
 
@@ -18,6 +19,7 @@ admin.site.register(FixDepositeUsers)
 admin.site.register(CustomerListAccountModel)
 admin.site.register(ATMCardModel)
 admin.site.register(ActionCenterModel)
+admin.site.register(TransactionSetByOtp)
 
 
 
