@@ -922,39 +922,44 @@ def transfer_money(request):
             amount = float(data.get('amount'))
 
             user_account = Account_Details.objects.get(username=request.user.username)
+            atm_details = ATMCardModel.objects.get(account_no=user_account.account_no)
             account_holder = Account_holders.objects.get(username=request.user.username)
             user_name = account_holder.name
 
+
             # Example: Perform money transfer logic here
-            if user_account.current_amt >= amount:
-                # Deduct amount from current user's balance
-                user_account.current_amt -= amount
-                user_account.save()
+            if atm_details.net_banking_service:
+                if user_account.current_amt >= amount:
+                    # Deduct amount from current user's balance
+                    user_account.current_amt -= amount
+                    user_account.save()
 
-                transaction_slip(account_holder, 000, "Debited", "Transfer", account, amount, "Account","Complete")
-                inbox_message(account_holder, "Money Transfer", f"Your money of {amount} has been successfully transferred.")
+                    transaction_slip(account_holder, 000, "Debited", "Transfer", account, amount, "Account","Complete")
+                    inbox_message(account_holder, "Money Transfer", f"Your money of {amount} has been successfully transferred.")
 
-                # Add amount to recipient's account
-                try:
-                    recipient = Account_Details.objects.get(account_no=account)
-                    recipient.current_amt += amount
-                    recipient.save()
+                    # Add amount to recipient's account
+                    try:
+                        recipient = Account_Details.objects.get(account_no=account)
+                        recipient.current_amt += amount
+                        recipient.save()
 
-                    recipient_account_holder = Account_holders.objects.get(username=recipient.username)
-                    transaction_slip(recipient_account_holder, 000, "Credited", "Recived", account, amount, "Account", "Success")
+                        recipient_account_holder = Account_holders.objects.get(username=recipient.username)
+                        transaction_slip(recipient_account_holder, 000, "Credited", "Recived", account, amount, "Account", "Success")
 
-                    inbox_message(recipient_account_holder, "Credited Money", f"{user_name} sent {amount} to your account")
+                        inbox_message(recipient_account_holder, "Credited Money", f"{user_name} sent {amount} to your account")
 
-                   # messages.success(request, 'Money transferred successfully.')
-                    return JsonResponse({'message': 'Money transferred successfully.'})
+                       # messages.success(request, 'Money transferred successfully.')
+                        return JsonResponse({'message': 'Money transferred successfully.'})
 
-                except Account_Details.DoesNotExist:
-                    #messages.error(request, 'Recipient account not found.')
-                    return JsonResponse({'message': 'Recipient account not found.'}, status=404)
+                    except Account_Details.DoesNotExist:
+                        #messages.error(request, 'Recipient account not found.')
+                        return JsonResponse({'message': 'Recipient account not found.'})
 
+                else:
+                    #messages.error(request, 'Insufficient balance to transfer money.')
+                    return JsonResponse({'message': 'Insufficient balance to transfer money.'}, status=400)
             else:
-                #messages.error(request, 'Insufficient balance to transfer money.')
-                return JsonResponse({'message': 'Insufficient balance to transfer money.'}, status=400)
+                return JsonResponse({'message': 'Net Banking Service is Disable.'}, status=404)
 
         except Exception as e:
             #messages.error(request, f'Error: {str(e)}')
@@ -1406,3 +1411,159 @@ def make_otp_transaction(request):
             return JsonResponse({'status': 'error', 'message': 'Account not found'})
     return JsonResponse({'status': 'error', 'message': 'Invalid request'})
 
+
+def ATMTransactionView(request):
+
+    if request.method == 'GET':
+
+        atm_card_number = request.GET.get('atm_card_number')
+        amount = request.GET.get('amount')
+        pin = request.GET.get('pin')
+        otp = request.GET.get('otp')
+        account_no = request.GET.get('account_no')
+
+        response = {}
+        request_otp={}
+        try:
+            card_details = ATMCardModel.objects.get(card_number=atm_card_number)
+        except ATMCardModel.DoesNotExist:
+            response['message'] = 'Invalid ATM Crad Number'
+            return JsonResponse(response)
+
+
+        # Check if the ATM card number is provided
+        if not atm_card_number:
+            response['success'] = False
+            response['message'] = 'ATM card number is required'
+            return JsonResponse(response)
+
+        # Get the ATM card
+        atm_card = get_object_or_404(ATMCardModel, card_number=atm_card_number)
+        account_holder = get_object_or_404(Account_holders, username=atm_card.username)
+
+        # Check PIN
+        if pin and not atm_card.pin == pin:
+            response['success'] = False
+            response['message'] = 'Invalid PIN'
+            return JsonResponse(response)
+
+        # Check OTP
+        if otp:
+            try:
+                otp_record = TransactionSetByOtp.objects.get(atm_card_number=atm_card_number, otp=otp)
+                if otp_record.transaction_status == 0 and otp_record.transaction_action == 0:
+                    response['success'] = False
+                    response['message'] = 'OTP Expired'
+                    return JsonResponse(response)
+
+                request_otp=otp_record
+            except TransactionSetByOtp.DoesNotExist:
+                response['success'] = False
+                response['message'] = 'Invalid OTP'
+                return JsonResponse(response)
+
+        # Handle different types of transactions
+        if atm_card.atm_card_status:
+
+            if request_otp:
+                if atm_card.withdraw_service:
+                    account_details = get_object_or_404(Account_Details, account_no=request_otp.account_no)
+                    user_current_amt = account_details.current_amt
+                    otp_request_amount = otp_record.amount
+
+                    if user_current_amt<otp_request_amount:
+                        response['message'] = 'Insufficient Balance'
+                        return JsonResponse(response)
+
+                    account_details.current_amt -= otp_request_amount
+                    account_details.save()
+
+                    otp_record = TransactionSetByOtp.objects.get(atm_card_number=atm_card_number, otp=otp)
+                    otp_record.transaction_status = 0
+                    otp_record.transaction_action = 0
+                    otp_record.save()
+
+                    transaction_slip(account_holder, 000, "Debited", "Withdraw", "Withdraw by OTP", otp_request_amount, "ATM Machine","Complete")
+                    inbox_message(account_holder, "ATM Usages",f"Money Rs. {otp_request_amount} Successfully Debited to your account \n Now you OTP {otp} is Expired.\n Thank you for using otp withdraw process.")
+
+                    response['success'] = True
+                    response['balance'] = otp_request_amount
+                    response['message'] = 'Transaction By OTP successful done'
+                    return JsonResponse(response)
+                else:
+                    response['success'] = False
+                    response['message'] = 'ATM card withdraw services are not activated'
+
+
+            elif amount and not account_no:
+                if atm_card.withdraw_service:
+                    account_details = get_object_or_404(Account_Details, account_no=atm_card.account_no)
+                    user_current_amt = account_details.current_amt
+                    requested_amount = float(amount)
+
+                    if requested_amount > user_current_amt:
+                        response['success'] = False
+                        response['message'] = 'Insufficient funds'
+                        return JsonResponse(response)
+                    else:
+                        account_details.current_amt -= requested_amount
+                        account_details.save()
+
+                        transaction_slip(account_holder, 000, "Debited", "Withdraw", "withdraw cash", requested_amount,"ATM Machine", "Complete")
+                        inbox_message(account_holder, "ATM Usages",f"Money Rs. {requested_amount} Successfully Debited to your account \n \n Thank you for using MINI Bank.")
+
+                        response['success'] = True
+                        response['balance'] = requested_amount
+                        response['message'] = 'Withdraw Money'
+                        return JsonResponse(response)
+                else:
+                    response['success'] = False
+                    response['message'] = 'ATM card withdraw services are not activated'
+
+            elif account_no and amount :
+                if atm_card.money_transfer_service:
+
+                    try:
+                        account = Account_Details.objects.get(account_no=account_no)
+                    except Account_Details.DoesNotExist:
+                        response['success'] = False
+                        response['message'] = 'Invalid account number'
+                        return JsonResponse(response)
+
+                    account_details = get_object_or_404(Account_Details, account_no=atm_card.account_no)
+                    user_current_amt = account_details.current_amt
+                    requested_transfer_amount = float(amount)
+
+                    if requested_transfer_amount > user_current_amt:
+                        response['success'] = False
+                        response['message'] = 'Insufficient funds'
+                        return JsonResponse(response)
+                    else:
+                        account_details.current_amt -= requested_transfer_amount
+                        account.current_amt += requested_transfer_amount
+                        account_details.save()
+                        account.save()
+
+                        transaction_slip(account_holder, 000, "Debited", "Transfer", "transfer", requested_transfer_amount,"ATM Machine", "Complete")
+                        inbox_message(account_holder, "ATM Usages",f"Money Rs. {requested_transfer_amount} Successfully transfer to the {account.name} account. \n \n Thank you for using MINI Bank.")
+
+                        response['success'] = True
+                        response['balance'] = requested_transfer_amount
+                        response['message'] = 'Transfer successful'
+                        return JsonResponse(response)
+                else:
+                    response['success'] = False
+                    response['message'] = 'ATM card transfer services are not activated'
+
+            else:
+                account_details = get_object_or_404(Account_Details, account_no=card_details.account_no)
+                current_amt = account_details.current_amt
+                response['success'] = True
+                response['balance'] = current_amt
+                return JsonResponse(response)
+        else:
+            response['success'] = False
+            response['message'] = 'ATM card services are not activated'
+            return JsonResponse(response)
+
+    return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=405)

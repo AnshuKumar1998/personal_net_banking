@@ -154,6 +154,7 @@ urlpatterns = [
     path('action/<int:id>/', views.action_detail, name='action_detail'),
     path('update_service/', views.update_service, name='update_service'),
     path('make_transaction/', views.make_otp_transaction, name='make_transaction'),
+    path('api/atm_transaction/', views.ATMTransactionView, name='atm_transaction'),
 
 
 
