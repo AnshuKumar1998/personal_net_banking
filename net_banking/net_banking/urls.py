@@ -14,13 +14,13 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from .import views
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
-
 
 
 urlpatterns = [
@@ -155,11 +155,12 @@ urlpatterns = [
     path('update_service/', views.update_service, name='update_service'),
     path('make_transaction/', views.make_otp_transaction, name='make_transaction'),
     path('api/atm_transaction/', views.ATMTransactionView, name='atm_transaction'),
-
-
+    path('delete_transactionByOtp/<str:transaction_id>/', views.delete_transactionByOtp, name='delete_transactionByOtp'),
+    path('end_session/<str:transaction_id>/', views.transactionotp_end_session, name='transactionotp_end_session'),
 
 
 
     #------------ End User Account URL --------------------------------------------------------
 ]+ static(settings.MEDIA_URL,document_root = settings.MEDIA_ROOT)
+
 

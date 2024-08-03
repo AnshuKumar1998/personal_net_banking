@@ -3,332 +3,316 @@
 {% block body %}
 <!-- inner-banner -->
 <section class="inner-banner" id="home">
-   <div class="inner-layer">
-      <div class="container">
-      </div>
-   </div>
+    <div class="inner-layer">
+        <div class="container">
+        </div>
+    </div>
 </section>
 <!-- end inner-banner -->
 
 <!-- breadcrumb -->
 <div class="breadcrumb-w3pvt">
-   <div class="container">
-      <nav aria-label="breadcrumb">
-         <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-               <a href="{% url 'index' %}">Home</a>
-            </li>
-            <li class="breadcrumb-item" aria-current="page">Log In</li>
-            <li class="breadcrumb-item" aria-current="page">Hi, {{ profile_data.name }}</li>
-         </ol>
-      </nav>
-   </div>
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'index' %}">Home</a>
+                </li>
+                <li class="breadcrumb-item" aria-current="page">Log In</li>
+                <li class="breadcrumb-item" aria-current="page">Hi, {{ profile_data.name }}</li>
+            </ol>
+        </nav>
+    </div>
 </div>
 <!-- end breadcrumb -->
 
 <!-- Left Column -->
 <div class="container mt-5">
-   <div class="row">
-      <!-- Left Column -->
-      <div class="col-md-3">
-         <!-- Profile Section -->
-        <div class="profile text-left mb-4">
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-md-3">
+            <!-- Profile Section -->
+            <div class="profile text-left mb-4">
                 {% if profile_data.profile_photo %}
-                    <img src="{{ profile_data.profile_photo }}" alt="" class="profile-image" id="profileImage">
+                <img src="{{ profile_data.profile_photo }}" alt="" class="profile-image" id="profileImage"> {% else %}
+                <img src="/static/images/sejal.jpg" alt="" class="profile-image" id="profileImage"> {% endif %}
+                <h4>Profile</h4>
+                <ul>
+                    <li><strong>Username : </strong>&nbsp; {{ profile_data.username }}</li>
+                    <li><strong>Name : </strong>&nbsp; {{ profile_data.name }}</li>
+                    <li><strong>Gender : </strong>&nbsp; {{ profile_data.gender }}</li>
+                    <li><strong>Date of Birth : </strong>&nbsp; {{ profile_data.dob }}</li>
+                    <li><strong>Mobile No. : </strong>&nbsp; {{ profile_data.mobile }}</li>
+                    <li><strong>Email ID : </strong>&nbsp; {{ profile_data.email }}</li>
+                </ul>
+                <!-- Ensure CSRF token is present -->
+                {% csrf_token %}
+            </div>
+            <!-- end Profile Section -->
+            <!-- loan Section -->
+            <div class="tags-widget mt-4">
+                <h4>Account Details</h4>
+                <li style="display: flex;"><strong>Bank Amount : </strong>&nbsp; {{ profile_data.bank_amount }}</li>
+                {% if profile_data.user_status == 'Blocked' %}
+                <ul>
+                    <li><a href="">Your Account Are<strong> Blocked</strong></a></li>
 
-                {% else %}
-                    <img src="/static/images/sejal.jpg" alt="" class="profile-image" id="profileImage">
-                {% endif %}
-            <h4>Profile</h4>
-            <ul>
-                <li><strong>Username : </strong>&nbsp; {{ profile_data.username }}</li>
-                <li><strong>Name : </strong>&nbsp; {{ profile_data.name }}</li>
-                <li><strong>Gender : </strong>&nbsp; {{ profile_data.gender }}</li>
-                <li><strong>Date of Birth : </strong>&nbsp; {{ profile_data.dob }}</li>
-                <li><strong>Mobile No. : </strong>&nbsp; {{ profile_data.mobile }}</li>
-                <li><strong>Email ID : </strong>&nbsp; {{ profile_data.email }}</li>
-            </ul>
-        <!-- Ensure CSRF token is present -->
-            {% csrf_token %}
+                </ul>
+            </div>
+
+            {% elif profile_data.user_account == 'Active' %}
+            <li style="display: flex;"><strong>Account No. : </strong>&nbsp; {{ profile_data.account_no }}</li>
+            <li style="display: flex;"><strong>Your UPI ID : </strong>&nbsp; {{ profile_data.upi_no }}</li>
+            <li style="display: flex; justify-content: space-between; align-items: center; list-style-type: disc;">
+                <div style="display: flex; align-items: center;">
+                    <strong style="margin-right: 10px;">Current Amount:</strong>
+                    <span id="currentAmount">{{ profile_data.current_amt }}</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <button type="button" id="refreshButton" class="btn btn-default btn-sm" style="margin: 0; padding: 5px;">
+                        <span class="glyphicon glyphicon-refresh"></span>
+                    </button>
+                    <button type="button" id="plusButton" class="btn btn-default btn-sm" style="margin: 0; padding: 5px;">
+                        <span class="glyphicon glyphicon-plus-sign"></span>
+                    </button>
+                </div>
+            </li>
+            <li style="display: flex;"><strong>Last Login :  </strong> {{ profile_data.last_login }}</li>
+            <li style="display: flex;"><strong>Pan No :  </strong>&nbsp; {{ profile_data.pan_no|slice:":5" }}XXXX</li>
+            <li style="display: flex;"><strong>Aadhar No :  </strong>&nbsp; {{ profile_data.aadhar_no|slice:":3" }}XXX</li>
         </div>
-         <!-- end Profile Section -->
-         <!-- loan Section -->
-         <div class="tags-widget mt-4">
-            <h4>Account Details</h4>
-            <li style="display: flex;" ><strong>Bank Amount : </strong>&nbsp; {{ profile_data.bank_amount }}</li>
-            {% if profile_data.user_status == 'Blocked' %}
-            <ul>
-               <li><a href="">Your Account Are<strong> Blocked</strong></a></li>
-
-            </ul>
-         </div>
-
-         {% elif profile_data.user_account == 'Active' %}
-         <li style="display: flex;"><strong>Account No. : </strong>&nbsp; {{ profile_data.account_no }}</li>
-         <li style="display: flex;"><strong>Your UPI ID : </strong>&nbsp; {{ profile_data.upi_no }}</li>
-         <li style="display: flex; justify-content: space-between; align-items: center; list-style-type: disc;">
-             <div style="display: flex; align-items: center;">
-                <strong style="margin-right: 10px;">Current Amount:</strong>
-                <span id="currentAmount">{{ profile_data.current_amt }}</span>
+        {% else %}
+        <li><a data-toggle="modal" data-target="#exampleModal" data-whatever="@mdo" href="">Click here For <strong>Activate Account</strong></a></li>
+    </div>
+    {% endif %}
+    <!--- end loan Section -->
+    <!-- Archives -->
+    <div class="tags-widget mt-4">
+        <h4>Archives</h4>
+        <ul>
+            <li><a href="/activity/">Activity</a></li>
+            <li><a href="/action_center/">Action Center</a></li>
+            <li><a href="/fix_deposit_list/">Fix Deposite</a></li>
+            <li><a href="/post_list/">Annocuments</a></li>
+            <li><a href="/complaint/">Complaint</a></li>
+            <li><a href="/user_setting/">Settings</a></li>
+        </ul>
+    </div>
+    <!-- Inbox Tabs -->
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link " id="online-tab" data-toggle="tab" href="#online" role="tab" aria-controls="online" aria-selected="false">Online</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link active" id="inbox-tab" data-toggle="tab" href="#inbox" role="tab" aria-controls="inbox" aria-selected="true">Inbox</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="chat-tab" data-toggle="tab" href="#chat" role="tab" aria-controls="chat" aria-selected="false"><span class="fa fa-comment"></span></a>
+        </li>
+    </ul>
+    <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade " id="online" role="tabpanel" aria-labelledby="online-tab">
+            <div class="user-card mt-3">
+                <div class="user-info">
+                    <h6>Anshu Kumar</h6>
+                </div>
             </div>
-            <div style="display: flex; align-items: center;">
-                <button type="button" id="refreshButton" class="btn btn-default btn-sm" style="margin: 0; padding: 5px;">
-                    <span class="glyphicon glyphicon-refresh"></span>
-                </button>
-                <button type="button" id="plusButton" class="btn btn-default btn-sm" style="margin: 0; padding: 5px;">
-                    <span class="glyphicon glyphicon-plus-sign"></span>
-                </button>
+        </div>
+        <div class="tab-pane fade show active" id="inbox" role="tabpanel" aria-labelledby="inbox-tab">
+            <div class="scrollable mt-3">
+                {% for message in profile_data.messages %}
+                <div class="message {% if not message.read %}unread{% endif %}" data-id="{{ message.id }}" data-subject="{{ message.subject }}" data-content="{{ message.content }}" data-date="{{ message.date }}">
+                    <span style="font-size:24px" class="delete-btn fa">&#xf014;</span>
+                    <h6>{{ message.subject }}</h6>
+                    <i>{{ message.date }}</i>
+                    <br>
+                </div>
+                {% endfor %}
             </div>
-         </li>
-         <li style="display: flex;"><strong>Last Login :  </strong> {{ profile_data.last_login }}</li>
-         <li style="display: flex;"><strong>Pan No :  </strong>&nbsp; {{ profile_data.pan_no|slice:":5" }}XXXX</li>
-         <li style="display: flex;"><strong>Aadhar No :  </strong>&nbsp; {{ profile_data.aadhar_no|slice:":3" }}XXX</li>
-      </div>
-      {% else %}
-      <li><a  data-toggle="modal" data-target="#exampleModal" data-whatever="@mdo" href="">Click here For <strong>Activate Account</strong></a></li>
-   </div>
-   {% endif %}
-   <!--- end loan Section -->
-   <!-- Archives -->
-   <div class="tags-widget mt-4">
-      <h4>Archives</h4>
-      <ul>
-         <li><a href="/activity/">Activity</a></li>
-          <li><a href="/action_center/">Action Center</a></li>
-         <li><a href="/fix_deposit_list/">Fix Deposite</a></li>
-         <li><a href="/post_list/">Annocuments</a></li>
-         <li><a href="/complaint/">Complaint</a></li>
-         <li><a href="/user_setting/">Settings</a></li>
-      </ul>
-   </div>
-   <!-- Inbox Tabs -->
-   <ul class="nav nav-tabs" id="myTab" role="tablist">
-      <li class="nav-item">
-         <a class="nav-link " id="online-tab" data-toggle="tab" href="#online" role="tab" aria-controls="online" aria-selected="false">Online</a>
-      </li>
-      <li class="nav-item">
-         <a class="nav-link active" id="inbox-tab" data-toggle="tab" href="#inbox" role="tab" aria-controls="inbox" aria-selected="true">Inbox</a>
-      </li>
-      <li class="nav-item">
-         <a class="nav-link" id="chat-tab" data-toggle="tab" href="#chat" role="tab" aria-controls="chat" aria-selected="false"><span class="fa fa-comment"></span></a>
-      </li>
-   </ul>
-   <div class="tab-content" id="myTabContent">
-      <div class="tab-pane fade " id="online" role="tabpanel" aria-labelledby="online-tab">
-         <div class="user-card mt-3">
-            <div class="user-info">
-               <h6>Anshu Kumar</h6>
+        </div>
+        <div class="tab-pane fade" id="chat" role="tabpanel" aria-labelledby="chat-tab">
+            <div class="user-card mt-3">
+                <img src="/static/images/sejal.jpg" alt="User Image" class="img-fluid">
+                <div class="user-info">
+                    <h6>Jane Smith</h6>
+                    <p>Chat</p>
+                </div>
             </div>
-         </div>
-      </div>
-      <div class="tab-pane fade show active" id="inbox" role="tabpanel" aria-labelledby="inbox-tab">
-         <div class="scrollable mt-3">
-            {% for message in profile_data.messages %}
-            <div class="message {% if not message.read %}unread{% endif %}"
-               data-id="{{ message.id }}"
-               data-subject="{{ message.subject }}"
-               data-content="{{ message.content }}"
-               data-date="{{ message.date }}">
-               <span style="font-size:24px" class="delete-btn fa">&#xf014;</span>
-               <h6>{{ message.subject }}</h6>
-               <i>{{ message.date }}</i><br>
+        </div>
+    </div>
+    <!-- Modal for displaying message details -->
+    <div class="modal fade" id="messageModal" tabindex="-1" role="dialog" aria-labelledby="messageModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="messageModalLabel">Message Details</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h6 id="modalSubject"></h6>
+                    <p id="modalContent"></p>
+                    <i id="modalDate"></i>
+                </div>
             </div>
-            {% endfor %}
-         </div>
-      </div>
-      <div class="tab-pane fade" id="chat" role="tabpanel" aria-labelledby="chat-tab">
-         <div class="user-card mt-3">
-            <img src="/static/images/sejal.jpg" alt="User Image" class="img-fluid">
-            <div class="user-info">
-               <h6>Jane Smith</h6>
-               <p>Chat</p>
-            </div>
-         </div>
-      </div>
-   </div>
-   <!-- Modal for displaying message details -->
-   <div class="modal fade" id="messageModal" tabindex="-1" role="dialog" aria-labelledby="messageModalLabel" aria-hidden="true">
-      <div class="modal-dialog" role="document">
-         <div class="modal-content">
-            <div class="modal-header">
-               <h5 class="modal-title" id="messageModalLabel">Message Details</h5>
-               <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-               <span aria-hidden="true">&times;</span>
-               </button>
-            </div>
-            <div class="modal-body">
-               <h6 id="modalSubject"></h6>
-               <p id="modalContent"></p>
-               <i id="modalDate"></i>
-            </div>
-         </div>
-      </div>
-   </div>
-   <!-- end Inbox Tabs -->
+        </div>
+    </div>
+    <!-- end Inbox Tabs -->
 </div>
 <!--end left Column tabs -->
 
 
 <!-- Right Column -->
 <div class="col-md-9">
-   <!-- Profit Chart -->
-   <div class="profit-chart">
-      <h2 class="text-center text-black mb-4">Profit Chart</h2>
-      <div class="chart-container bg-dark p-4 rounded">
-         <canvas id="profitChart" width="400" height="200"></canvas>
-      </div>
-   </div>
-   <!-- End Profit Chart -->
-
-   <!-- Profile Form and Tabs -->
-   <div class="profile-form mt-4">
-      <ul class="nav nav-tabs" id="profileTab" role="tablist">
-         <li class="nav-item">
-            <a class="nav-link active" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="true">Profile</a>
-         </li>
-         {% if profile_data.user_account == 'Active' and profile_data.user_status == 'Running' %}
-         <li class="nav-item">
-            <a class="nav-link" id="apply-loan-tab" data-toggle="tab" href="#apply-loan" role="tab" aria-controls="apply-loan" aria-selected="false">Apply Loan</a>
-         </li>
-         <li class="nav-item">
-            <a class="nav-link" id="repayment-tab" data-toggle="tab" href="#repayment" role="tab" aria-controls="repayment" aria-selected="false">Money Transfer</a>
-         </li>
-         <li class="nav-item">
-            <a class="nav-link" id="statements-tab" data-toggle="tab" href="#statements" role="tab" aria-controls="statements" aria-selected="false">Loan History</a>
-         </li>
-         <li class="nav-item">
-            <a class="nav-link" id="transaction-tab" data-toggle="tab" href="#transaction" role="tab" aria-controls="transaction" aria-selected="false">Transaction History</a>
-         </li>
-         {% endif %}
-      </ul>
-      <div class="tab-content" id="profileTabContent">
-         <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
-            <form class="mt-3" method="post" action="/update_profile/">
-               {% csrf_token %}
-               <div class="form-group">
-                  <label for="username">Username</label>
-                  <input type="text" class="form-control" id="username" name="username" placeholder="Enter username" value="{{ profile_data.username }}" readonly>
-               </div>
-               <div class="form-group">
-                  <label for="name">Name</label>
-                  <input type="text" class="form-control" id="name" name="name" placeholder="Enter name" value="{{ profile_data.name }}" readonly>
-               </div>
-               <div class="form-group">
-                  <label for="email">Email address</label>
-                  <input type="email" class="form-control" id="email" name="email" placeholder="Enter email" value="{{ profile_data.email }}" readonly>
-               </div>
-               <div class="form-group">
-                  <label for="address">Address</label>
-                  <input type="text" class="form-control" id="address" name="address" placeholder="Enter address" value="{{ profile_data.address }}" readonly>
-               </div>
-               <div class="form-group">
-                  <label for="gender">Gender</label>
-                  <select class="form-control" id="gender" name="gender" disabled>
-                  <option value="Male" {% if profile_data.gender == 'Male' %}selected{% endif %}>Male</option>
-                  <option value="Female" {% if profile_data.gender == 'Female' %}selected{% endif %}>Female</option>
-                  <option value="Other" {% if profile_data.gender == 'Other' %}selected{% endif %}>Other</option>
-                  </select>
-               </div>
-               <div class="form-group">
-                  <label for="dob">Date of Birth</label>
-                  <input type="date" class="form-control" id="dob" name="dob" value="{{ profile_data.dob|date:'Y-m-d' }}" readonly>
-               </div>
-               <div class="form-group">
-                  <label for="mobile">Mobile Number</label>
-                  <input type="text" class="form-control" id="mobile" name="mobile" placeholder="Enter mobile number" value="{{ profile_data.mobile }}" readonly>
-               </div>
-               <button type="submit" class="btn btn-primary">Submit</button>
-               <button type="button" class="btn btn-secondary" id="profile_edit_enable">Edit</button>
-               <script src="{% static 'js/profile_edit_enable.js' %}"></script>
-            </form>
-         </div>
-         <div class="tab-pane fade" id="apply-loan" role="tabpanel" aria-labelledby="apply-loan-tab">
-            <form class="mt-3" method="POST" action="/loan_preview_form/">
-               {% csrf_token %}
-               <div class="form-group">
-                  <label for="loan-amount">Loan Amount</label>
-                  <input type="number" class="form-control" name="loan_amt" placeholder="Enter loan amount" required>
-               </div>
-               <div class="form-group">
-                  <label for="loan-purpose">Purpose</label>
-                  <select class="form-control" id="purpose" name="purpose">
-                     <option value="business">Business</option>
-                     <option value="study">Study</option>
-                     <option value="investment">Investment</option>
-                     <option value="other">Other</option>
-                  </select>
-               </div>
-               <div class="form-group">
-                  <label for="loan-term">Term (month)</label>
-                  <input type="number" class="form-control" name="loan_period" id="loan-term" placeholder="Enter loan term" required>
-               </div>
-               <div class="form-group">
-                  <label for="loan-term">Loan Reference Code</label>
-                  <input type="number" class="form-control" name="reference_no" placeholder="Enter Loan Reference Code (Optional)">
-               </div>
-               <div class="form-check">
-                  <input class="form-check-input" type="checkbox" value="" required>
-                  <label class="form-check-label" for="check2">&nbsp;&nbsp;&nbsp;&nbsp;According to MINI Bank rule if you not pay loan with interest at a time then MINI Bank append fine  of your loan amount Rs. 5 per day</label>
-               </div>
-               <div class="form-check">
-                  <input class="form-check-input" type="checkbox" value="" required>
-                  <label class="form-check-label" for="check1">&nbsp;&nbsp;&nbsp;&nbsp;If you want Renewal the submission date of loan then Per month increases Interest Rate 1%.</label>
-               </div>
-               <br>
-               <button type="submit" class="btn btn-primary">Apply</button>
-            </form>
-         </div>
-
-<div class="tab-pane fade" id="repayment" role="tabpanel" aria-labelledby="repayment-tab">
-    <form id="transferForm" method="POST">
-        {% csrf_token %}
-        <div class="form-group d-flex">
-            <div class="flex-grow-1">
-                <label for="accountInput">Recipient Account Number or UPI ID</label>
-                <input type="text" class="form-control" id="accountInput" name="account" required>
-            </div>
-            <div class="ml-2 align-self-end">
-                <button type="button" class="btn btn-secondary" id="searchButton">Search</button>
-                <button type="button" class="btn btn-warning" id="listButton">Customer List</button>
-            </div>
+    <!-- Profit Chart -->
+    <div class="profit-chart">
+        <h2 class="text-center text-black mb-4">Profit Chart</h2>
+        <div class="chart-container bg-dark p-4 rounded">
+            <canvas id="profitChart" width="400" height="200"></canvas>
         </div>
-        <div id="userData" style="display: none;">
-            <div class="form-group">
-                <label for="userName">Recipient Name</label>
-                <input type="text" class="form-control" id="userName" name="userName" readonly>
+    </div>
+    <!-- End Profit Chart -->
+
+    <!-- Profile Form and Tabs -->
+    <div class="profile-form mt-4">
+        <ul class="nav nav-tabs" id="profileTab" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="true">Profile</a>
+            </li>
+            {% if profile_data.user_account == 'Active' and profile_data.user_status == 'Running' %}
+            <li class="nav-item">
+                <a class="nav-link" id="apply-loan-tab" data-toggle="tab" href="#apply-loan" role="tab" aria-controls="apply-loan" aria-selected="false">Apply Loan</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="repayment-tab" data-toggle="tab" href="#repayment" role="tab" aria-controls="repayment" aria-selected="false">Money Transfer</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="statements-tab" data-toggle="tab" href="#statements" role="tab" aria-controls="statements" aria-selected="false">Loan History</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="transaction-tab" data-toggle="tab" href="#transaction" role="tab" aria-controls="transaction" aria-selected="false">Transaction History</a>
+            </li>
+            {% endif %}
+        </ul>
+        <div class="tab-content" id="profileTabContent">
+            <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+                <form class="mt-3" method="post" action="/update_profile/">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" placeholder="Enter username" value="{{ profile_data.username }}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" class="form-control" id="name" name="name" placeholder="Enter name" value="{{ profile_data.name }}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email address</label>
+                        <input type="email" class="form-control" id="email" name="email" placeholder="Enter email" value="{{ profile_data.email }}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="address">Address</label>
+                        <input type="text" class="form-control" id="address" name="address" placeholder="Enter address" value="{{ profile_data.address }}" readonly>
+                    </div>
+                    <div class="form-group">
+                      <label for="gender">Gender</label>
+                      <select class="form-control" id="gender" name="gender" disabled>
+                      <option value="Male" {% if profile_data.gender == 'Male' %}selected{% endif %}>Male</option>
+                      <option value="Female" {% if profile_data.gender == 'Female' %}selected{% endif %}>Female</option>
+                      <option value="Other" {% if profile_data.gender == 'Other' %}selected{% endif %}>Other</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="dob">Date of Birth</label>
+                        <input type="date" class="form-control" id="dob" name="dob" value="{{ profile_data.dob|date:'Y-m-d' }}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="mobile">Mobile Number</label>
+                        <input type="text" class="form-control" id="mobile" name="mobile" placeholder="Enter mobile number" value="{{ profile_data.mobile }}" readonly>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                    <button type="button" class="btn btn-secondary" id="profile_edit_enable">Edit</button>
+                    <script src="{% static 'js/profile_edit_enable.js' %}"></script>
+                </form>
             </div>
-            <div class="form-group">
-                <label for="userEmail">Recipient Email</label>
-                <input type="email" class="form-control" id="userEmail" name="userEmail" readonly>
+            <div class="tab-pane fade" id="apply-loan" role="tabpanel" aria-labelledby="apply-loan-tab">
+                <form class="mt-3" method="POST" action="/loan_preview_form/">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="loan-amount">Loan Amount</label>
+                        <input type="number" class="form-control" name="loan_amt" placeholder="Enter loan amount" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loan-purpose">Purpose</label>
+                        <select class="form-control" id="purpose" name="purpose">
+                            <option value="business">Business</option>
+                            <option value="study">Study</option>
+                            <option value="investment">Investment</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="loan-term">Term (month)</label>
+                        <input type="number" class="form-control" name="loan_period" id="loan-term" placeholder="Enter loan term" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loan-term">Loan Reference Code</label>
+                        <input type="number" class="form-control" name="reference_no" placeholder="Enter Loan Reference Code (Optional)">
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" required>
+                        <label class="form-check-label" for="check2">&nbsp;&nbsp;&nbsp;&nbsp;According to MINI Bank rule if you not pay loan with interest at a time then MINI Bank append fine of your loan amount Rs. 5 per day</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" required>
+                        <label class="form-check-label" for="check1">&nbsp;&nbsp;&nbsp;&nbsp;If you want Renewal the submission date of loan then Per month increases Interest Rate 1%.</label>
+                    </div>
+                    <br>
+                    <button type="submit" class="btn btn-primary">Apply</button>
+                </form>
             </div>
-            <div class="form-group">
-                <label for="userMobile">Recipient Mobile Number</label>
-                <input type="text" class="form-control" id="userMobile" name="userMobile" readonly>
+
+            <div class="tab-pane fade" id="repayment" role="tabpanel" aria-labelledby="repayment-tab">
+                <form id="transferForm" method="POST">
+                    {% csrf_token %}
+                    <div class="form-group d-flex">
+                        <div class="flex-grow-1">
+                            <label for="accountInput">Recipient Account Number or UPI ID</label>
+                            <input type="text" class="form-control" id="accountInput" name="account" required>
+                        </div>
+                        <div class="ml-2 align-self-end">
+                            <button type="button" class="btn btn-secondary" id="searchButton">Search</button>
+                            <button type="button" class="btn btn-warning" id="listButton">Customer List</button>
+                        </div>
+                    </div>
+                    <div id="userData" style="display: none;">
+                        <div class="form-group">
+                            <label for="userName">Recipient Name</label>
+                            <input type="text" class="form-control" id="userName" name="userName" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="userEmail">Recipient Email</label>
+                            <input type="email" class="form-control" id="userEmail" name="userEmail" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="userMobile">Recipient Mobile Number</label>
+                            <input type="text" class="form-control" id="userMobile" name="userMobile" readonly>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="transferAmount">Amount to Transfer</label>
+                        <input type="number" class="form-control" id="transferAmount" name="amount" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="transferButton">Transfer Now</button>
+                </form>
             </div>
-        </div>
-        <div class="form-group">
-            <label for="transferAmount">Amount to Transfer</label>
-            <input type="number" class="form-control" id="transferAmount" name="amount" required>
-        </div>
-        <button type="button" class="btn btn-primary" id="transferButton">Transfer Now</button>
-    </form>
-</div>
 
-
-
-
-
-
-
-
-
-
-
-       <div class="tab-pane fade scrollable2 mt-3" id="statements" role="tabpanel" aria-labelledby="statements-tab">
-             {% for loan in profile_data.loan_details %}
-                 <div class="card highlight">
-                     <div class="card-header" id="heading{{ forloop.counter }}">
-                         <h2 class="mb-0">
+            <div class="tab-pane fade scrollable2 mt-3" id="statements" role="tabpanel" aria-labelledby="statements-tab">
+                {% for loan in profile_data.loan_details %}
+                <div class="card highlight">
+                    <div class="card-header" id="heading{{ forloop.counter }}">
+                        <h2 class="mb-0">
                              <button class="btn btn btn-secondary btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapse{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse{{ forloop.counter }}" style="color: white;">
                              # {{ loan.loan_id }}
                              </button>
@@ -345,233 +329,222 @@
                              <button type="button" class="btn btn-danger ml-2">Cancel</button>
                              {% endif %}
                          </h2>
-                     </div>
-                     <div id="collapse{{ forloop.counter }}" class="collapse" aria-labelledby="heading{{ forloop.counter }}" data-parent="#accordionExample">
-                         <div class="card-body">
-                             <table class="table table-bordered" style="font-size: 14px;">
-                                 <thead>
-                                     <tr>
-                                         <th>Loan<br>Amount</th>
-                                         <th>Interest</th>
-                                         <th>Period</th>
-                                         <th>Released Date</th>
-                                         <th>Return<br>Amount</th>
-                                         <th>Close Date</th>
-                                         <th>Fine</th>
-                                         <th>Paid</th>
-                                         <th>Remaining</th>
-                                         <th>Status</th>
-                                     </tr>
-                                 </thead>
-                                 <tbody>
-                                     <tr>
-                                         <td>{{ loan.loan_principle_amt }}</td>
-                                         <td>{{ loan.loan_intrest_rate }}</td>
-                                         <td>{{ loan.loan_period }}</td>
-                                         <td>{{ loan.loan_release_date }}</td>
-                                         <td>{{ loan.loan_returing_amt }}</td>
-                                         <td>{{ loan.loan_close_date }}</td>
-                                         <td>{{ loan.loan_fine_amt }}</td>
-                                         <td>{{ loan.loan_paid_amt }}</td>
-                                         <td>{{ loan.total }}</td>
-                                         <td>{{ loan.loan_status }}</td>
-                                     </tr>
-                                 </tbody>
-                             </table>
-                             {% if loan.loan_status == "Running" %}
-                             <table class="table table-bordered">
-                                 <thead>
-                                 <tbody>
-                                     <tr>
-                                         <a href="{% url 'payment_page' %}?loan_id={{ loan.loan_id }}" class="btn btn-primary ml-2" style="float:right">Pay Now</a>
-                                     </tr>
-                                 </tbody>
-                                 </thead>
-                             </table>
-                             {% endif %}
-                             {% if loan.loan_status == "Processing" or loan.loan_status == "Closed" or loan.loan_status == "Cancel" %}
-                             <table class="table table-bordered">
-                                 <thead>
-                                 <tbody>
-                                     <tr>
-                                         <div class="loanform" data-id="{{ loan.loan_id }}">
-                                             <span style="font-size:20px" class="btn btn-danger delete-btn fa">&#xf014;</span>
-                                         </div>
-                                     </tr>
-                                 </tbody>
-                                 </thead>
-                             </table>
-                             {% endif %}
-                             {% if loan.loan_status == "Cancel" or loan.loan_status == "Hold" or loan.loan_status == "Processing" or loan.loan_status == "Close" %}
-                             {% if loan.loan_description %}
-                             <table class="table table-bordered">
-                                 <thead>
-                                 <tbody>
-                                     <tr>
-                                         <td><strong>Reason : </strong>{{ loan.loan_description }}</td>
-                                     </tr>
-                                 </tbody>
-                                 </thead>
-                             </table>
-                             {% endif %}
-                             {% endif %}
-                         </div>
-                     </div>
-                 </div>
-             {% endfor %}
-         </div>
-
-
-         <div class="tab-pane fade scrollable2 mt-3" id="transaction" role="tabpanel" aria-labelledby="transaction-tab">
-        <div class="mt-3">
-            <h4>Transaction History</h4>
-            <button type="button" class="btn btn-info" onclick="printTable()">Print Statement</button>
-           <button type="button" class="btn btn-warning ml-2"  onclick="window.location.href='{% url 'transaction_statement' %}'">View All</button>
-
-
-            <button type="button" class="btn btn-danger" onclick="openDeletePopup()">Delete</button><br>
-            <table id="transaction-table" class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Section</th>
-                        <th>Amount</th>
-                        <th>Transaction Type</th>
-                        <th>Transaction ID</th>
-                        <th>Payment Status</th>
-                        <th>Payment Method</th>
-                        <th>Transaction Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for transaction in profile_data.transactions %}
-                    <tr>
-                        <td>{{ transaction.section }}</td>
-                        <td>{{ transaction.amount }}</td>
-                        <td>{{ transaction.transaction_type }}</td>
-                        <td>{{ transaction.transaction_id }}</td>
-                        <td>{{ transaction.payment_status }}</td>
-                        <td>{{ transaction.payment_method }}</td>
-                        <td>{{ transaction.transaction_date }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
-        </div>
-    </div>
-
-    <!-- Delete Popup Modal -->
-    <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="deleteModalLabel">Select Months to Delete</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+                    </div>
+                    <div id="collapse{{ forloop.counter }}" class="collapse" aria-labelledby="heading{{ forloop.counter }}" data-parent="#accordionExample">
+                        <div class="card-body">
+                            <table class="table table-bordered" style="font-size: 14px;">
+                                <thead>
+                                    <tr>
+                                        <th>Loan<br>Amount</th>
+                                        <th>Interest</th>
+                                        <th>Period</th>
+                                        <th>Released Date</th>
+                                        <th>Return<br>Amount</th>
+                                        <th>Close Date</th>
+                                        <th>Fine</th>
+                                        <th>Paid</th>
+                                        <th>Remaining</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>{{ loan.loan_principle_amt }}</td>
+                                        <td>{{ loan.loan_intrest_rate }}</td>
+                                        <td>{{ loan.loan_period }}</td>
+                                        <td>{{ loan.loan_release_date }}</td>
+                                        <td>{{ loan.loan_returing_amt }}</td>
+                                        <td>{{ loan.loan_close_date }}</td>
+                                        <td>{{ loan.loan_fine_amt }}</td>
+                                        <td>{{ loan.loan_paid_amt }}</td>
+                                        <td>{{ loan.total }}</td>
+                                        <td>{{ loan.loan_status }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            {% if loan.loan_status == "Running" %}
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tbody>
+                                        <tr>
+                                            <a href="{% url 'payment_page' %}?loan_id={{ loan.loan_id }}" class="btn btn-primary ml-2" style="float:right">Pay Now</a>
+                                        </tr>
+                                    </tbody>
+                                </thead>
+                            </table>
+                            {% endif %} {% if loan.loan_status == "Processing" or loan.loan_status == "Closed" or loan.loan_status == "Cancel" %}
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tbody>
+                                        <tr>
+                                            <div class="loanform" data-id="{{ loan.loan_id }}">
+                                                <span style="font-size:20px" class="btn btn-danger delete-btn fa">&#xf014;</span>
+                                            </div>
+                                        </tr>
+                                    </tbody>
+                                </thead>
+                            </table>
+                            {% endif %} {% if loan.loan_status == "Cancel" or loan.loan_status == "Hold" or loan.loan_status == "Processing" or loan.loan_status == "Close" %} {% if loan.loan_description %}
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>Reason : </strong>{{ loan.loan_description }}</td>
+                                        </tr>
+                                    </tbody>
+                                </thead>
+                            </table>
+                            {% endif %} {% endif %}
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-body">
-                    <form id="deleteForm">
-                        <!-- Checkboxes for months will be inserted here by JavaScript -->
-                    </form>
+                {% endfor %}
+            </div>
+
+            <div class="tab-pane fade scrollable2 mt-3" id="transaction" role="tabpanel" aria-labelledby="transaction-tab">
+                <div class="mt-3">
+                    <h4>Transaction History</h4>
+                    <button type="button" class="btn btn-info" onclick="printTable()">Print Statement</button>
+                    <button type="button" class="btn btn-warning ml-2" onclick="window.location.href='{% url 'transaction_statement' %}'">View All</button>
+                    <button type="button" class="btn btn-danger" onclick="openDeletePopup()">Delete</button>
+                    <br>
+                    <table id="transaction-table" class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Section</th>
+                                <th>Amount</th>
+                                <th>Transaction Type</th>
+                                <th>Transaction ID</th>
+                                <th>Payment Status</th>
+                                <th>Payment Method</th>
+                                <th>Transaction Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in profile_data.transactions %}
+                            <tr>
+                                <td>{{ transaction.section }}</td>
+                                <td>{{ transaction.amount }}</td>
+                                <td>{{ transaction.transaction_type }}</td>
+                                <td>{{ transaction.transaction_id }}</td>
+                                <td>{{ transaction.payment_status }}</td>
+                                <td>{{ transaction.payment_method }}</td>
+                                <td>{{ transaction.transaction_date }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-danger" onclick="deleteTransactions()">Delete</button>
+            </div>
+
+            <!-- Delete Popup Modal -->
+            <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="deleteModalLabel">Select Months to Delete</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="deleteForm">
+                                <!-- Checkboxes for months will be inserted here by JavaScript -->
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-danger" onclick="deleteTransactions()">Delete</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-
-
-
-      </div>
-   </div>
 </div>
 </div>
 </div>
 </div>
-<br><br>
+<br>
+<br>
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-   <div class="modal-dialog">
-      <div class="modal-content">
-         <div class="modal-header">
-            <h1 class="modal-title fs-5" id="exampleModalLabel">Basic Details</h1>
-         </div>
-         <div class="modal-body">
-            <form method="post" action="/activate/">
-               {% csrf_token %}
-               <div class="mb-3">
-                  <label for="recipient-name" class="col-form-label">Pan Card :</label>
-                  <input type="text" class="form-control" name="pancard" id="pancard">
-               </div>
-               <div class="mb-3">
-                  <label for="recipient-name" class="col-form-label">Aadhar Card :</label>
-                  <input type="text" class="form-control" name="aadharno" id="aadharno">
-               </div>
-               <div class="form-check">
-                  <input class="form-check-input" type="checkbox" value="" id="check1">
-                  <label class="form-check-label" for="check1">&nbsp;&nbsp;&nbsp;&nbsp;Accept all term & condition.</label>
-               </div>
-               <div class="form-check">
-                  <input class="form-check-input" type="checkbox" value="" id="check2">
-                  <label class="form-check-label" for="check2">&nbsp;&nbsp;&nbsp;&nbsp;All details are coorectly filled</label>
-               </div>
-               <div class="modal-footer">
-                  <button type="submit" class="btn btn-primary">Activate</button>
-               </div>
-            </form>
-         </div>
-      </div>
-   </div>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Basic Details</h1>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="/activate/">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="recipient-name" class="col-form-label">Pan Card :</label>
+                        <input type="text" class="form-control" name="pancard" id="pancard">
+                    </div>
+                    <div class="mb-3">
+                        <label for="recipient-name" class="col-form-label">Aadhar Card :</label>
+                        <input type="text" class="form-control" name="aadharno" id="aadharno">
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="check1">
+                        <label class="form-check-label" for="check1">&nbsp;&nbsp;&nbsp;&nbsp;Accept all term & condition.</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="check2">
+                        <label class="form-check-label" for="check2">&nbsp;&nbsp;&nbsp;&nbsp;All details are coorectly filled</label>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Activate</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 {% if messages %}
 <div id="successModal" class="modal fade" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
-   <div class="modal-dialog">
-      <div class="modal-content">
-         <div class="modal-header">
-            <h5 class="modal-title" id="successModalLabel">Success</h5>
-         </div>
-         <div class="modal-body">
-            {% for message in messages %}
-            <p>{{ message }}</p>
-            {% endfor %}
-         </div>
-         <div class="modal-footer">
-            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
-         </div>
-      </div>
-   </div>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="successModalLabel">Success</h5>
+            </div>
+            <div class="modal-body">
+                {% for message in messages %}
+                <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
 </div>
 {% endif %}
 
-
 <script>
-   $(document).ready(function() {
-       {% if messages %}
-           $('#successModal').modal('show');
-       {% endif %}
-   });
-
+    $(document).ready(function() {
+           {% if messages %}
+               $('#successModal').modal('show');
+           {% endif %}
+       });
 </script>
 
 <div class="modal fade" id="successModal2" tabindex="-1" aria-labelledby="successModalLabel2" aria-hidden="true">
-   <div class="modal-dialog">
-      <div class="modal-content">
-         <div class="modal-header">
-            <h5 class="modal-title" id="successModalLabel2">Success</h5>
-            <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
-         </div>
-         <div class="modal-body">
-            <p id="successMessage2"></p>
-         </div>
-         <div class="modal-footer">
-            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
-         </div>
-      </div>
-   </div>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="successModalLabel2">Success</h5>
+                <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="successMessage2"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
 </div>
-
 
 <div class="modal fade" id="amountModal" tabindex="-1" aria-labelledby="amountModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -581,7 +554,7 @@
                 <button type="button" class="btn btn-light" style="position: absolute; top: 50%; transform: translateY(-50%); right: 10px; background-color: #f8d7da; border-color: #f5c6cb;" data-dismiss="modal" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="addAmountForm" >
+                <form id="addAmountForm">
                     <div class="mb-3">
                         <label for="amount" class="form-label">Amount</label>
                         <input type="number" class="form-control" id="amount" name="amount" required>
@@ -603,5 +576,6 @@
 <script src="{% static 'js/account_list_view.js' %}"></script>
 
 
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script> <!-- loan history -->
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<!-- loan history -->
 {% endblock %}

@@ -3,27 +3,27 @@
 {% block body %}
 <!-- inner-banner -->
 <section class="inner-banner" id="home">
-   <div class="inner-layer">
-      <div class="container">
-      </div>
-   </div>
+    <div class="inner-layer">
+        <div class="container">
+        </div>
+    </div>
 </section>
 <!-- //inner-banner -->
 
 <!-- breadcrumb -->
 <div class="breadcrumb-w3pvt">
-   <div class="container">
-      <nav aria-label="breadcrumb">
-         <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-               <a href="{% url 'index' %}">Home</a>
-            </li>
-            <li class="breadcrumb-item"><a>Log In</a></li>
-            <li class="breadcrumb-item"><a href="">Hi, {{ user.username }}</a></li>
-            <li class="breadcrumb-item" aria-current="page">Transaction Statement</li>
-         </ol>
-      </nav>
-   </div>
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'index' %}">Home</a>
+                </li>
+                <li class="breadcrumb-item"><a>Log In</a></li>
+                <li class="breadcrumb-item"><a href="">Hi, {{ user.username }}</a></li>
+                <li class="breadcrumb-item" aria-current="page">Transaction Statement</li>
+            </ol>
+        </nav>
+    </div>
 </div>
 
 <div class="container mt-4">
@@ -42,7 +42,7 @@
                 </div>
                 <div class="form-group mb-2">
                     <label for="transaction_type" class="small">Transaction Type</label>
-                    <select name="transaction_type" class="form-control form-control-sm">
+                     <select name="transaction_type" class="form-control form-control-sm">
                         <option value="">-- Select --</option>
                         <option value="Credited" {% if transaction_type_filter == "Credited" %}selected{% endif %}>Credited</option>
                         <option value="Debited" {% if transaction_type_filter == "Debited" %}selected{% endif %}>Debited</option>
@@ -54,7 +54,7 @@
                 </div>
                 <div class="form-group mb-2">
                     <label for="status" class="small">Status</label>
-                    <select name="status" class="form-control form-control-sm">
+                     <select name="status" class="form-control form-control-sm">
                         <option value="">-- Select --</option>
                         <option value="Success" {% if status_filter == "Success" %}selected{% endif %}>Success</option>
                         <option value="Failed" {% if status_filter == "Failed" %}selected{% endif %}>Failed</option>
@@ -82,7 +82,7 @@
                     <thead class="thead-dark">
                         <tr>
                             <th class="small">Sl. No.</th>
-                             <th class="small">Transaction ID</th>
+                            <th class="small">Transaction ID</th>
                             <th class="small">Transaction Date</th>
                             <th class="small">Type</th>
                             <th class="small">Credited By</th>
@@ -124,15 +124,11 @@
                             <span class="sr-only">Previous</span>
                         </a>
                     </li>
-                    {% endif %}
-
-                    {% for num in page_obj.paginator.page_range %}
+                    {% endif %} {% for num in page_obj.paginator.page_range %}
                     <li class="page-item {% if page_obj.number == num %}active{% endif %}">
                         <a class="page-link" href="?page={{ num }}">{{ num }}</a>
                     </li>
-                    {% endfor %}
-
-                    {% if page_obj.has_next %}
+                    {% endfor %} {% if page_obj.has_next %}
                     <li class="page-item">
                         <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
                             <span aria-hidden="true">&raquo;</span>
@@ -144,12 +140,13 @@
             </nav>
 
             <!-- Print button -->
-           <div class="button-group">
+            <div class="button-group">
                 <button class="btn btn-primary" onclick="window.print()">Print Statement</button>
                 <button id="sendMailButton" class="btn btn-primary" style="background-color: #28a745; border-color: #28a745;">Send in Mail</button>
-                 <button type="button" class="btn btn-danger" onclick="openDeletePopup()">Delete</button>
+                <button type="button" class="btn btn-danger" onclick="openDeletePopup()">Delete</button>
             </div>
-            <br><br>
+            <br>
+            <br>
 
         </div>
     </div>
@@ -202,9 +199,7 @@
 </div>
 <script src="{% static 'js/transaction.js' %}"></script>
 
-{% endblock %}
-
-{% block extra_css %}
+{% endblock %} {% block extra_css %}
 <style>
     .table-bordered th, .table-bordered td {
         border: 1px solid #dee2e6;

@@ -20,7 +20,7 @@ from django.contrib import messages
 import logging
 from django.core.paginator import Paginator
 from django.contrib.auth.hashers import check_password
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 from django.db.models import Count
 from django.core.mail import EmailMessage
 from io import BytesIO
@@ -1278,28 +1278,34 @@ def send_table_in_email(email, pdf_file):
     email_message = EmailMessage(subject, message, 'anshumk123@gmail.com', [email])
     email_message.attach('transaction_statement.pdf', pdf_file.read(), 'application/pdf')
     email_message.send()
-
+@csrf_exempt
 @login_required
 def user_profile(request):
-    profile_holder = get_object_or_404(Account_holders, user=request.user)
-    account_details = get_object_or_404(Account_Details, username=profile_holder.username)
-    card_details = ATMCardModel.objects.get(account_no=account_details.account_no)
-    transactions_by_otp = TransactionSetByOtp.objects.filter(user=account_details)
+    if request.method == 'GET':
+        profile_holder = get_object_or_404(Account_holders, user=request.user)
+        account_details = get_object_or_404(Account_Details, username=profile_holder.username)
+        card_details = ATMCardModel.objects.get(account_no=account_details.account_no)
+        transactions_by_otp = TransactionSetByOtp.objects.filter(user=account_details).order_by('-issue_date')
 
+        formatted_date_time_str = today_date_time()
+        kolkata_time = datetime.strptime(formatted_date_time_str, '%Y-%m-%d %I:%M %p')
+        expiration_time = kolkata_time + timedelta(minutes=15)
+        expiration_time_iso = expiration_time.isoformat()
 
-    context = {
-        'name': profile_holder.name,
-        'account_details': account_details,
-        'profile_holder': profile_holder,
-        'card_details': card_details,
-        'net_banking_service': card_details.net_banking_service,
-        'withdraw_service': card_details.withdraw_service,
-        'atm_card_status': card_details.atm_card_status,
-        'money_transfer_service': card_details.money_transfer_service,
-        'transactions_by_otp':transactions_by_otp,
-    }
+        context = {
+            'name': profile_holder.name,
+            'account_details': account_details,
+            'profile_holder': profile_holder,
+            'card_details': card_details,
+            'net_banking_service': card_details.net_banking_service,
+            'withdraw_service': card_details.withdraw_service,
+            'atm_card_status': card_details.atm_card_status,
+            'money_transfer_service': card_details.money_transfer_service,
+            'transactions_by_otp':transactions_by_otp,
+            'expiration_time_iso':expiration_time_iso,
+        }
 
-    return render(request, 'users_dir/user_profile.html',context)
+        return render(request, 'users_dir/user_profile.html',context)
 
 def atm_card_view(request):
     profile_holder = get_object_or_404(Account_holders, user=request.user)
@@ -1316,7 +1322,7 @@ def atm_card_view(request):
 
 def action_center(request):
     profile_holder = get_object_or_404(Account_holders, user=request.user)
-    actions = ActionCenterModel.objects.all()
+    actions = ActionCenterModel.objects.filter(username=profile_holder.username)
     context ={
         'name':profile_holder.name,
         'actions': actions
@@ -1377,6 +1383,8 @@ def make_otp_transaction(request):
         pin = data.get('pin')
         account_no = data.get('account_no')
 
+
+
         try:
             card_details = ATMCardModel.objects.get(account_no=account_no)
             account_details = Account_Details.objects.get(account_no=account_no)
@@ -1387,6 +1395,10 @@ def make_otp_transaction(request):
                 expire_date = kolkata_time + timedelta(minutes=10)
                 date_obj = datetime.strptime(formatted_date_time_str, '%Y-%m-%d %I:%M %p')
                 otp = generate_otp()
+
+                expiration_time = kolkata_time + timedelta(minutes=15)
+                expiration_time_iso = expiration_time.isoformat()
+
                 transaction = TransactionSetByOtp.objects.create(
                     user=account_details,
                     username=card_details.username,
@@ -1401,7 +1413,7 @@ def make_otp_transaction(request):
                     atm_card_number=card_details.card_number,
                     transaction_status=False,
                     issue_date=date_obj,
-                    expire_date=expire_date,
+                    expire_date=expiration_time_iso,
                     description='Transaction completed'
                 )
                 return JsonResponse({'status': 'success'})
@@ -1567,3 +1579,30 @@ def ATMTransactionView(request):
             return JsonResponse(response)
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=405)
+
+
+@require_http_methods(["DELETE"])
+def delete_transactionByOtp(request, transaction_id):
+    try:
+        transaction = TransactionSetByOtp.objects.get(transactionbyotp_id=transaction_id)
+        transaction.delete()
+        return JsonResponse({'status': 'success'}, status=200)
+    except TransactionSetByOtp.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Transaction not found'}, status=404)
+
+
+@csrf_exempt
+@require_POST
+def transactionotp_end_session(request, transaction_id):
+    if request.method == 'POST':
+        print(transaction_id)  # Debugging line to verify transaction_id
+        transaction = get_object_or_404(TransactionSetByOtp, transactionbyotp_id=transaction_id)
+
+        transaction.transaction_status = False
+        transaction.transaction_action = False
+        transaction.save()
+
+        return JsonResponse({'status': 'success'})
+    else:
+        return JsonResponse({'status': 'fail'})
+

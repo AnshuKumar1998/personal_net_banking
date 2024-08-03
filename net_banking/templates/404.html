@@ -1,0 +1,36 @@
+{% extends 'master.html' %}
+	{% block body %}
+		<!-- inner-banner -->
+		<section class="inner-banner" id="home">
+		   <div class="inner-layer">
+			  <div class="container">
+			  </div>
+		   </div>
+		</section>
+		<!-- //inner-banner -->
+		<!-- breadcrumb -->
+		<div class="breadcrumb-w3pvt">
+		   <div class="container">
+			  <nav aria-label="breadcrumb">
+				 <ol class="breadcrumb">
+					<li class="breadcrumb-item">
+					   <a href="{% url 'index' %}">Home</a>
+					</li>
+					  {% if user.is_authenticated %}
+					  <li class="breadcrumb-item" aria-current="page">Log In</li>
+					  <li class="breadcrumb-item" aria-current="page"><a href="/user_account/">Hi, {{ name }}</a></li>
+					  <li class="breadcrumb-item" aria-current="page">404 (Page Not Found)</li>
+					  {% else %}
+					  <li class="breadcrumb-item" aria-current="page">404 (Page Not Found)</li>
+					  {% endif %}
+				 </ol>
+			  </nav>
+		   </div>
+		</div>
+		<!-- contact -->
+
+    <h1>404</h1>
+    <p>Sorry, the page you are looking for cannot be found.</p>
+    <a href="{% url 'home' %}">Go back to Home</a>
+
+{% endblock %}

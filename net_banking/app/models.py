@@ -287,7 +287,7 @@ class ActionCenterModel(models.Model):
         ('new', 'New Action'),
         ('pending', 'Pending Action'),
         ('completed', 'Completed Action'),
-        ('block','Blocked Action')
+        ('incompleted','Incompleted Action')
     ]
     user = models.ForeignKey('Account_Details', on_delete=models.CASCADE, related_name='action_center')
     username = models.CharField(max_length=255)
@@ -295,7 +295,7 @@ class ActionCenterModel(models.Model):
     email = models.EmailField()
     subject = models.CharField(max_length=255)
     content = models.TextField()
-    status = models.CharField(max_length=10, choices=ACTION_STATUSES)
+    status = models.CharField(max_length=20, choices=ACTION_STATUSES)
     description = models.CharField(max_length=250)
     action_status=models.BooleanField(default=False)
     issue_date = models.DateTimeField(default=timezone.now)
