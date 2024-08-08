@@ -29,8 +29,7 @@ urlpatterns = [
     path('master/',views.master,name="master"),
 
 
-    #------------ Pages URL ------------------------------------------------------------
-
+    #------------ website url ------------------------------------------------------------
     path('',views.index,name="index"),
 
     path('contact_us', views.contact_us, name="contact_us"),
@@ -41,22 +40,33 @@ urlpatterns = [
 
     path('blog/', views.blog, name="blog"),
 
+    path('service/',views.service,name="service"),
+
+    path('post_list/', views.post_list, name='post_list'),
+
+    path('like/<int:post_id>/', views.like_post, name='like_post'),
+
+    #------------ Loan url ------------------------------------------------------------
     path('payment/', views.payment_page, name='payment_page'),
 
     path('process_payment/', views.process_payment, name='process_payment'),
-
-    path('get-transactions/', views.get_transactions, name='get_transactions'),
 
     path('loan_preview_form/', views.loan_preview_form, name='loan_preview_form'),
 
     path('delete_loan/<int:loan_id>/', views.delete_loan, name='delete_loan'),
 
+    path('loan_form/', views.loan_form, name="loan_form"),
 
+    #------------ Transaction url ------------------------------------------------------------
+    path('get-transactions/', views.get_transactions, name='get_transactions'),
+    path('api/get_customer_accounts/', views.get_customer_accounts, name='get_customer_accounts'),
+    path('transaction_statement/', views.user_transaction_statement, name='transaction_statement'),
+    path('delete-transaction/<int:id>/', views.delete_transaction, name='delete_transaction'),
+    path('fetch-transaction-months/', views.fetch_transaction_months, name='fetch_transaction_months'),
+    path('delete-transactions/', views.delete_transactions, name='delete_transactions'),
 
-    #------------ End Pages URL ------------------------------------------------------------
 
     #------------ User Account URL ------------------------------------------------------------
-
     path('user_account/', views.user_account, name="user_account"),
 
     path('logout/', views.logout, name='logout'),
@@ -65,25 +75,9 @@ urlpatterns = [
 
     path('update_profile/', views.update_profile, name='update_profile'),
 
-    path('delete_message/<int:message_id>/', views.delete_message, name='delete_message'),
-
     path('api/profit-data/', views.get_profit_data, name='get_profit_data'),
 
     path('chart/', views.chart_view, name='chart_view'),
-
-    path('loan_form/', views.loan_form, name="loan_form"),
-
-    path('fix_deposit_list/', views.fix_deposit_list, name="fix_deposit_list"),
-
-    path('fix-deposite-details/<str:fix_deposite_id>/', views.fix_deposite_details, name='fix_deposite_details'),
-
-    path('service/',views.service,name="service"),
-
-    path('fix_deposite_process_payment/', views.fix_deposite_process_payment, name='fix_deposite_process_payment'),
-
-    path('post_list/', views.post_list, name='post_list'),
-
-    path('like/<int:post_id>/', views.like_post, name='like_post'),
 
     path('user_setting/', views.user_setting, name='user_setting'),
 
@@ -93,9 +87,22 @@ urlpatterns = [
 
     path('delete_account/', views.delete_account, name='delete_account'),
 
+    #-----------Inbox URL ------------------------------------------------------------
+    path('delete_message/<int:message_id>/', views.delete_message, name='delete_message'),
+
+
+    #------------ Fix Deposite URL ------------------------------------------------------------
+    path('fix_deposit_list/', views.fix_deposit_list, name="fix_deposit_list"),
+
+    path('fix-deposite-details/<str:fix_deposite_id>/', views.fix_deposite_details, name='fix_deposite_details'),
+
+    path('fix_deposite_process_payment/', views.fix_deposite_process_payment, name='fix_deposite_process_payment'),
+
     path('fix-deposite-payment/', views.fix_deposite_payment_details, name='fix-deposite-payment'),
 
     path('fixDeposite-paymentProcess/', views.fix_deposite_payment_process, name='fixDeposite-paymentProcess'),
+
+
 
     path('complaint/', views.complaint_form, name='complaint_form'),
 
@@ -137,30 +144,39 @@ urlpatterns = [
 
     path('update_amount/', views.update_amount, name='update_amount'),
     path('get_current_amount/', views.get_current_amount, name='get_current_amount'),
-    path('fetch-transaction-months/', views.fetch_transaction_months, name='fetch_transaction_months'),
-    path('delete-transactions/', views.delete_transactions, name='delete_transactions'),
+
+
+
+
+    path('send_mail/', views.send_mail_view, name='send_mail'),
+    path('get_account_email/', views.get_account_email, name='get_account_email'),
+    path('user_profile/', views.user_profile, name='user_profile'),
+
+    #------------ Add Customer URL --------------------------------------------------------
     path('account_list/', views.customer_account_list, name='account_list'),
     path('delete_customer/<int:account_no>/', views.delete_customer, name='delete_customer'),
     path('verify_account/', views.verify_account, name='verify_account'),
     path('add_customer/', views.add_customer, name='add_customer'),
-    path('api/get_customer_accounts/', views.get_customer_accounts, name='get_customer_accounts'),
-    path('transaction_statement/', views.user_transaction_statement, name='transaction_statement'),
-    path('delete-transaction/<int:id>/', views.delete_transaction, name='delete_transaction'),
-    path('send_mail/', views.send_mail_view, name='send_mail'),
-    path('get_account_email/', views.get_account_email, name='get_account_email'),
-    path('user_profile/', views.user_profile, name='user_profile'),
-    path('atm_card_view/', views.atm_card_view, name='atm_card_view'),
+
+
+    #------------ Action Center URL --------------------------------------------------------
     path('action_center/', views.action_center, name='action_center'),
     path('action/<int:id>/', views.action_detail, name='action_detail'),
-    path('update_service/', views.update_service, name='update_service'),
-    path('make_transaction/', views.make_otp_transaction, name='make_transaction'),
+
+    #------------ ATM View URL --------------------------------------------------------
     path('api/atm_transaction/', views.ATMTransactionView, name='atm_transaction'),
+    path('update_service/', views.update_service, name='update_service'),
+    path('atm_card_view/', views.atm_card_view, name='atm_card_view'),
+
+    #------------ Transaction by otp URL --------------------------------------------------------
+    path('make_transaction/', views.make_otp_transaction, name='make_transaction'),
     path('delete_transactionByOtp/<str:transaction_id>/', views.delete_transactionByOtp, name='delete_transactionByOtp'),
     path('end_session/<str:transaction_id>/', views.transactionotp_end_session, name='transactionotp_end_session'),
 
+    path('remove_photo/', views.remove_photo, name='remove_photo'),
 
+    path('save_photo/', views.save_photo, name='save_photo'),
 
-    #------------ End User Account URL --------------------------------------------------------
 ]+ static(settings.MEDIA_URL,document_root = settings.MEDIA_ROOT)
 
 

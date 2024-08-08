@@ -18,7 +18,7 @@
                     </li>
                     {% if user.is_authenticated %}
                         <li class="breadcrumb-item" aria-current="page">Log In</li>
-                        <li class="breadcrumb-item" aria-current="page">Hi, {{ profile }}</li>
+                        <li class="breadcrumb-item" aria-current="page"><a href="/user_account/">Hi, {{ profile }}</a></li>
                         <li class="breadcrumb-item" aria-current="page">Fix Deposite</li>
                     {% else %}
                     <li class="breadcrumb-item"  aria-current="page"><a href='/service/'>Services</a></li>

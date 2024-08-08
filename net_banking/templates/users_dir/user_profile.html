@@ -30,16 +30,21 @@
             <div class="col-lg-4">
                 <div class="card mb-4">
                     <div class="card-body text-center">
-                        <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3.webp" alt="avatar" class="rounded-circle img-fluid" style="width: 150px;">
+                        <img src="{% if image_path %}{{ MEDIA_URL }}{{ image_path }}{% else %}https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3.webp{% endif %}" alt="avatar" class="rounded-circle img-fluid" id="profileImage" style="width: 220px; height: 250px;">
                         <h5 class="my-3">{{ account_details.name }}</h5>
                         <p class="text-muted mb-1">Welcome In MINI Bank</p>
                         <p class="text-muted mb-4">You Are Best Customer For Us.</p>
                         <div class="d-flex justify-content-center mb-2">
-                            <button type="button" data-mdb-button-init data-mdb-ripple-init class="btn btn-primary">Change Photo</button>&nbsp;&nbsp;&nbsp;&nbsp;
-                            <button type="button" data-mdb-button-init data-mdb-ripple-init class="btn btn-outline-primary ms-1">Remove Photo</button>
+                            <button type="button" data-mdb-button-init data-mdb-ripple-init class="btn btn-primary" id="changePhotoBtn">Change Photo</button>&nbsp;&nbsp;&nbsp;&nbsp;
+                            <button type="button" data-mdb-button-init data-mdb-ripple-init class="btn btn-outline-primary ms-1" id="removePhotoBtn">Remove Photo</button>
                         </div>
                     </div>
+
+
+                    <input type="file" id="fileInput" accept="image/*" style="display:none;">
+                    <canvas id="imageCanvas" style="display:none;"></canvas>
                 </div>
+
                 <div class="card mb-4 mb-lg-0">
                     <div class="card-body p-0">
                         <ul class="list-group list-group-flush rounded-3">
@@ -269,7 +274,7 @@
                                             <div class="col" style="padding-left: 5px; padding-right: 5px;">
                                                 <div class="input-group">
                                                     <span class="input-group-text"><i class="fas fa-clock"></i></span>
-                                                    <input type="text" class="form-control countdown-timer" data-expire-date="{{ expiration_time_iso }}" readonly>
+                                                    <input type="text" class="form-control countdown-timer" data-expire-date="{{ transaction.expire_date }}" readonly>
 
                                                 </div>
                                             </div>
@@ -285,7 +290,7 @@
                                             </div>
                                             {% if transaction.transaction_action == 1 %}
                                             <div class="col" style="padding-right: 10px; padding-left: 5px;">
-                                                <button type="button" data-mdb-button-init data-mdb-ripple-init class="btn btn-outline-primary h-100 w-100 end-session-btn" data-id="{{ transaction.transactionbyotp_id }}" style="font-size: 18px; padding: 2px 6px;">`END S`ESSION</button>
+                                                <button type="button" data-mdb-button-init data-mdb-ripple-init class="btn btn-outline-primary h-100 w-100 end-session-btn" data-id="{{ transaction.transactionbyotp_id }}" style="font-size: 18px; padding: 2px 6px;">END SESSION</button>
                                             </div>
                                             {% else %}
                                             <div class="col" style="padding-right: 10px; padding-left: 5px;">
@@ -548,25 +553,82 @@
 </style>
 
 <script>
+    function convertToISOFormat(dateString) {
+    // Parse the date string to get individual components
+    const parts = dateString.match(/(\w+)\. (\d+), (\d+), (\d+):(\d+) (\w+)\./);
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    const month = monthNames.indexOf(parts[1]) + 1;
+    const day = parseInt(parts[2]);
+    const year = parseInt(parts[3]);
+    let hour = parseInt(parts[4]);
+    const minute = parseInt(parts[5]);
+    const period = parts[6];
+
+    // Adjust hour based on AM/PM
+    if (period === "p.m." && hour !== 12) {
+        hour += 12;
+    } else if (period === "a.m." && hour === 12) {
+        hour = 0;
+    }
+
+    // Create a new Date object in the local time zone
+    const date = new Date(year, month - 1, day, hour, minute);
+
+    // Get the ISO string representation of the date
+    const isoString = date.toISOString();
+
+    return isoString;
+}
+function format12HourClock() {
+    // Create a Date object for the current time
+    const now = new Date();
+
+    // Create a formatter for the 12-hour time format with AM/PM
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true // Use 12-hour format
+    });
+
+    // Format the current time
+    return formatter.format(now);
+
+}
+
 
 document.addEventListener('DOMContentLoaded', () => {
     function updateCountdown() {
         document.querySelectorAll('.countdown-timer').forEach(timer => {
-            const expireDateString = timer.getAttribute('data-expire-date');
-            const expireDate = new Date(expireDateString).getTime();
-            const now = new Date().getTime();
-            const distance = expireDate - now;
+           const rawExpireDateString = timer.getAttribute('data-expire-date');
+            const expireDateString = convertToISOFormat(rawExpireDateString);
+             const expireDate = new Date(expireDateString).getTime();
+
+            const now = format12HourClock();
+           // console.log(expireDate);
+            const date = new Date(expireDate);
+            const dateString = date.toString();
+
+
+            const distance = (expireDate - now);
+
+            if(expireDate>now)
+                console.log("expire");
+            else
+              //  console.log("now");
+
 
             if (isNaN(expireDate) || distance < 0) {
                 timer.value = "Expired";
                 return;
             }
 
-            const totalMinutes = Math.floor(distance / (1000 * 60));
+            const totalMinutes = Math.floor(distance / (1000 * 60)) ;
             const minutes = totalMinutes % 60;
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
             timer.value = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
         });
     }
 
@@ -619,19 +681,87 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 </script>
+<script>
+    $(document).ready(function(){
+        $('#removePhotoBtn').click(function(){
+            $.ajax({
+                url: "{% url 'remove_photo' %}",
+                type: "POST",
+                data: {
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                success: function(response){
+                    if(response.success){
+                        $('#profileImage').attr('src', 'https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3.webp');
+                    } else {
+                        alert('Failed to remove photo.');
+                    }
+                },
+                error: function(response){
+                    alert('Error: ' + response.statusText);
+                }
+            });
+        });
+    });
+</script>
 
+<script>
+    document.getElementById('changePhotoBtn').addEventListener('click', function() {
+        document.getElementById('fileInput').click();
+    });
 
+    document.getElementById('fileInput').addEventListener('change', handleFileSelect, false);
 
+    function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.getElementById('imageCanvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
 
+                    // Optionally, you can add scaling or cropping here
 
+                    const base64Image = canvas.toDataURL().split(',')[1]; // Extract base64 string
 
+                    $.ajax({
+                        url: "{% url 'save_photo' %}",
+                        type: "POST",
+                        data: {
+                            'csrfmiddlewaretoken': '{{ csrf_token }}',
+                            'base64_image': base64Image
+                        },
+                        success: function(response) {
+                            console.log('Success:', response); // Debugging line
+                            console.log('Success:', response.new_image_url); // Debugging line
+                            if (response.success) {
+                                $('#profileImage').attr('src', response.new_image_url); // Update image source
 
+                            } else {
+                                alert('Failed to upload photo.');
+                            }
+                        },
+                        error: function(response) {
+                            console.log('Error:', response); // Debugging line
+                            alert('Error: ' + response.statusText);
+                        }
+                    });
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+</script>
 
 
 <!-- Add Font Awesome CSS for the icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
-
 
 <script src="{% static 'js/atm_service.js' %}"></script>
 

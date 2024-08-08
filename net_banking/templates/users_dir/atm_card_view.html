@@ -9,6 +9,23 @@
     </div>
 </section>
 <!-- //inner-banner -->
+
+<!-- breadcrumb -->
+<div class="breadcrumb-w3pvt">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'index' %}">Home</a>
+                </li>
+                <li class="breadcrumb-item"><a>Log In</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'user_account' %}">Hi, {{ name }}</a></li>
+                <li class="breadcrumb-item"><a>ATM Card View</a></li>
+            </ol>
+        </nav>
+    </div>
+</div>
+<!-- //inner-banner -->
 <br>
 <link href="https://fonts.googleapis.com/css?family=Roboto:300,400" rel="stylesheet">
 

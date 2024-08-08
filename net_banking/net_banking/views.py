@@ -1,5 +1,9 @@
+import base64
+import os
 import uuid
 import json
+from django.conf import settings
+from django.core.files.storage import default_storage
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.urls import reverse
@@ -13,7 +17,7 @@ from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,Mon
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
-from app.help import today_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number, inbox_message,transaction_slip, create_atm_card,generate_otp,today_date_time,generate_unique_transactionByOtp_id
+from app.help import today_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number, inbox_message,transaction_slip, create_atm_card,generate_otp,today_date_time,generate_unique_transactionByOtp_id,convert_base64_to_image,convert_image_to_base64
 from django.contrib.auth.models import User
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -28,13 +32,14 @@ from reportlab.lib.pagesizes import landscape, letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib import colors
 from django.utils.dateformat import format
-from django.core.exceptions import ObjectDoesNotExist
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
 
 
+
+#---------------------Website Page-----------------------
 def master(request):
     return render(request,'master.html')
 
@@ -75,6 +80,15 @@ def contact_us(request):
     return render(request,'contact_us.html',context)
 
 
+def service(request):
+    name = "None"
+    if request.user.is_authenticated:
+        profile_holder = get_object_or_404(Account_holders, user=request.user)
+        name = profile_holder.name
+    context = {
+        'name': name
+    }
+    return render(request, 'service_dir/service.html',context)
 
 def login(request):
     if request.method == 'POST':
@@ -92,11 +106,42 @@ def login(request):
 
     return render(request, 'users_dir/login.html')
 
+def post_list(request):
+    name="none"
+    if request.user.is_authenticated:
+        profile_holder = get_object_or_404(Account_holders, user=request.user)
+        name = profile_holder.name
+
+    posts = Post.objects.all().order_by('-date')
+    paginator = Paginator(posts, 5)  # Show 5 posts per page.
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    context ={
+        'page_obj':page_obj,
+        'name':name
+    }
+    return render(request, 'post_list.html', context)
+
+@csrf_exempt
+def like_post(request, post_id):
+    if request.method == 'POST':
+        post = get_object_or_404(Post, id=post_id)
+        post.likes += 1
+        post.save()
+        return JsonResponse({'likes': post.likes})
+
+#---------------------End Website Page-----------------------
+
+
+
+
+#---------------------user account-----------------------
 @never_cache
 @login_required
 def user_account(request):
     try:
         profile = Account_holders.objects.get(user=request.user)
+
         try:
             account_data = Account_Details.objects.get(username=profile.username)
         except Account_Details.DoesNotExist:
@@ -116,6 +161,20 @@ def user_account(request):
 
         now = timezone.now()
         active_admin_message = "true"
+
+        image_path=""
+
+        if profile.photo:
+            base64_string = profile.photo
+            filename = profile.username
+
+            image_return =convert_base64_to_image(base64_string, filename)
+            if image_return:
+                image_path = "/" + image_return
+            else:
+                image_path=""
+            profile.profile_photo = image_path
+            profile.save()
 
 
         transactions = UserTransactionDetails.objects.filter(username=request.user).order_by('-transaction_date')
@@ -150,6 +209,7 @@ def user_account(request):
             'transactions': transaction_list,
             'bank_amount': current_amount,
             'show_message': active_admin_message,
+            'image_path': image_path
         }
 
     except Account_holders.DoesNotExist:
@@ -162,13 +222,16 @@ def user_account(request):
 
     return render(request, 'users_dir/user_account.html', context)
 
+
 def logout(request):
+
     auth_logout(request)
     response = redirect('login')
-    response.delete_cookie('sessionid')  # Delete the session cookie
+    response.delete_cookie('sessionid')
     response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response['Pragma'] = 'no-cache'
     response['Expires'] = '0'
+
     return response
 
 def new_account_holder(request):
@@ -285,6 +348,236 @@ def update_profile(request):
         return redirect('user_account')
     return render(request, 'users_dir/user_account.html')
 
+def get_profit_data(request):
+    data = MonthlyProfit.objects.all().values('month', 'profit')
+    return JsonResponse(list(data), safe=False)
+
+@login_required
+def chart_view(request):
+    return render(request, 'users_dir/blog.html')
+
+@login_required
+def user_setting(request):
+    profile = Account_holders.objects.get(username = request.user.username)
+    context = {
+        'name':profile.name,
+    }
+    return render(request,'user_setting_dir/user_setting.html',context)
+
+@login_required
+def user_activity(request):
+    user = request.user
+    profile = Account_holders.objects.get(username=user)
+    statuses = ['Running', 'Processing', 'Hold']
+    loans = UserLoanDetails.objects.filter(username=profile.username).filter(Q(loan_status='Running') | Q(loan_status='Processing') | Q(loan_status='Hold'))
+    fix_deposites = FixDepositeUsers.objects.filter(username=profile.username)
+
+    user_profile = {
+        "name":profile.name
+    }
+    context = {
+        'profile': user_profile,
+        "loans":loans,
+        "fix_deposites":fix_deposites,
+
+    }
+    return render(request, 'user_setting_dir/user_activity.html', context)
+
+
+def complaint_form(request):
+    profile_holder = get_object_or_404(Account_holders, user=request.user)
+    if request.method == "POST":
+        name = profile_holder.name
+        email = profile_holder.email
+        message = request.POST.get('message')
+        file = request.FILES.get('formFile')
+
+        complaint_id = str(uuid.uuid4())
+
+        complaint = Complaint(
+            name=name,
+            email=email,
+            message=message,
+            file=file,
+            complaint_id=complaint_id
+        )
+        complaint.save()
+
+        inbox_message(profile_holder, "Complaint", f"Complaint has been sent successfully.")
+
+        messages.success(request, 'Your complaint has been successfully sent!')
+        return redirect(reverse('complaint_form'))
+
+    recent_complaints = Complaint.objects.filter(email=profile_holder.email).order_by('-created_at')
+
+    context = {
+        'name': profile_holder.name,
+        'email': profile_holder.email,
+        'recent_complaints': recent_complaints,
+    }
+
+    return render(request, 'user_complaint.html', context)
+
+def delete_complaint(request, id):
+    if request.method == 'POST':
+        complaint = get_object_or_404(Complaint, id=id)
+        complaint.delete()
+        messages.success(request, 'Complaint deleted successfully.')
+    return redirect('complaint_form')  # Adjust 'complaint_page' to your actual complaint listing page name
+
+
+@csrf_exempt  # Temporarily exempt CSRF to focus on troubleshooting
+def transfer_money(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            account = data.get('account')
+            amount = float(data.get('amount'))
+
+            user_account = Account_Details.objects.get(username=request.user.username)
+            atm_details = ATMCardModel.objects.get(account_no=user_account.account_no)
+            account_holder = Account_holders.objects.get(username=request.user.username)
+            user_name = account_holder.name
+
+
+            # Example: Perform money transfer logic here
+            if atm_details.net_banking_service:
+                if user_account.current_amt >= amount:
+                    # Deduct amount from current user's balance
+                    user_account.current_amt -= amount
+                    user_account.save()
+
+                    transaction_slip(account_holder, 000, "Debited", "Transfer", account, amount, "Account","Complete")
+                    inbox_message(account_holder, "Money Transfer", f"Your money of {amount} has been successfully transferred.")
+
+                    # Add amount to recipient's account
+                    try:
+                        recipient = Account_Details.objects.get(account_no=account)
+                        recipient.current_amt += amount
+                        recipient.save()
+
+                        recipient_account_holder = Account_holders.objects.get(username=recipient.username)
+                        transaction_slip(recipient_account_holder, 000, "Credited", "Recived", account, amount, "Account", "Success")
+
+                        inbox_message(recipient_account_holder, "Credited Money", f"{user_name} sent {amount} to your account")
+
+                       # messages.success(request, 'Money transferred successfully.')
+                        return JsonResponse({'message': 'Money transferred successfully.'})
+
+                    except Account_Details.DoesNotExist:
+                        #messages.error(request, 'Recipient account not found.')
+                        return JsonResponse({'message': 'Recipient account not found.'})
+
+                else:
+                    #messages.error(request, 'Insufficient balance to transfer money.')
+                    return JsonResponse({'message': 'Insufficient balance to transfer money.'}, status=400)
+            else:
+                return JsonResponse({'message': 'Net Banking Service is Disable.'}, status=404)
+
+        except Exception as e:
+            #messages.error(request, f'Error: {str(e)}')
+            return JsonResponse({'message': f'Error: {str(e)}'}, status=500)
+
+    return JsonResponse({'message': 'Method not allowed.'}, status=405)
+
+def fetch_user_data(request):
+    if request.method == 'GET':
+        account_input = request.GET.get('accountInput')
+
+        if account_input.isdigit():
+            account_details = get_object_or_404(Account_Details, account_no=account_input)
+        else:
+            account_details = get_object_or_404(Account_Details, upi_no=account_input)
+
+        user_data = {
+            'name': account_details.name,
+            'email': account_details.email,
+            'mobile': account_details.mobile,
+        }
+
+
+        if user_data:
+            return JsonResponse({'success': True, 'data': user_data})
+        else:
+            return JsonResponse({'success': False})
+
+    return render(request, 'users_dir/user_account.html')
+
+
+@login_required
+def verify_old_password(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        old_password = data.get('old_password')
+
+        if check_password(old_password, request.user.password):
+            return JsonResponse({'status': 'success'})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Old password is incorrect'})
+@login_required
+def change_password(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        new_password = data.get('new_password')
+
+        account_holder = Account_holders.objects.get(user=request.user)
+
+        account_holder.password = new_password
+        account_holder.save()
+
+        user = request.user
+        user.set_password(new_password)
+        user.save()
+
+        update_session_auth_hash(request, user)  # Prevents user from being logged out after password change
+        inbox_message(account_holder, "Password Changed","Your Password Successfully has been changed")
+        messages.success(request, 'Password changed successfully.')
+        return JsonResponse({'status': 'success'})
+
+    messages.error(request, 'Failed to change password.')
+    return JsonResponse({'status': 'error', 'message': 'Failed to change password.'})
+
+
+@csrf_exempt
+@require_POST
+def update_amount(request):
+    data = json.loads(request.body)
+    amount = float(data.get('amount'))
+    profile_holder = get_object_or_404(Account_holders, user=request.user)
+
+    if amount < 99:
+        inbox_message(profile_holder, "Failed Credited Money", f"Money Rs. {amount} Failed credited to your account")
+        return JsonResponse({'success': False, 'message': 'Failed to add money.'})
+
+    if amount is not None:
+
+        profile_data = get_object_or_404(Account_Details, username=profile_holder.username)
+
+        # Update current amount
+        profile_data.current_amt += amount
+        profile_data.save()
+        transaction_slip(profile_holder, 000, "Credited", "Add Money", "self", amount, "Credit Card", "Complete")
+
+        # Send inbox message
+        inbox_message(profile_holder, "Credited Money", f"Money Rs. {amount} Successfully credited to your account")
+
+        # Return JsonResponse with success message and updated amount
+        return JsonResponse({'success': True, 'message': 'Money added successfully.', 'new_amount': profile_data.current_amt})
+
+    return JsonResponse({'success': False, 'message': 'Failed to add money.'})
+
+def get_current_amount(request):
+    profile_holder = get_object_or_404(Account_holders, user=request.user)
+    profile_data = get_object_or_404(Account_Details, username=profile_holder.username)
+    return JsonResponse({'success': True, 'current_amount': profile_data.current_amt})
+
+
+#---------------------End user account-----------------------
+
+
+
+#---------------------Inbox-----------------------
+
 @csrf_exempt
 def delete_message(request, message_id):
     if request.method == 'DELETE':
@@ -296,14 +589,10 @@ def delete_message(request, message_id):
             return JsonResponse({'error': 'Message not found'}, status=404)
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
+#---------------------End Inbox-----------------------
 
-def get_profit_data(request):
-    data = MonthlyProfit.objects.all().values('month', 'profit')
-    return JsonResponse(list(data), safe=False)
 
-@login_required
-def chart_view(request):
-    return render(request, 'users_dir/blog.html')
+
 
 # ---------------------  loan Related All Function Here-----------------------
 @login_required
@@ -489,7 +778,7 @@ def update_loan_status(sender, instance, **kwargs):
             else:
                 # Set flag for insufficient balance
                 instance.update_status_success = False
-# -------------------------------End Loan Related Function-----------------------
+
 @login_required
 def process_payment(request):
     if request.method == "POST":
@@ -548,21 +837,61 @@ def process_payment(request):
         return redirect('user_account')
 
     return redirect('user_account')
+# -------------------------------End Loan Related Function-----------------------
+
+
 
 @login_required
-def get_transactions(request):
-    transactions = UserTransactionDetails.objects.filter(username=request.user)
-    transaction_list = list(transactions.values(
-        'loan_id',
-        'amount',
-        'transaction_type',
-        'transaction_id',
-        'payment_status',
-        'payment_method',
-        'transaction_date'
-    ))
-    return JsonResponse({'data': transaction_list})
+def hide_message(request):
+    if request.method == 'POST':
+        try:
+            profile = Account_holders.objects.get(user=request.user)
+            profile.message_seen = True
+            profile.save()
+            return JsonResponse({'status': 'ok'})
+        except Account_holders.DoesNotExist:
+            return JsonResponse({'status': 'error'})
 
+
+@login_required
+@csrf_exempt
+def delete_account(request):
+    if request.method == 'POST':
+        username = request.user.username
+
+        # Check if there are running or processing loans or fixed deposits
+        running_loans = UserLoanDetails.objects.filter(username=username, loan_status__in=['Running', 'Processing'])
+        running_deposits = FixDepositeUsers.objects.filter(username=username, fix_deposite_status='Running')
+
+        if running_loans.exists() or running_deposits.exists():
+            return JsonResponse({'status': 'error', 'message': "You can't delete your account with running or processing loans/deposits."})
+
+        # Delete User Inbox data
+        User_Inbox.objects.filter(username=username).delete()
+
+        try:
+            # Delete account details if they exist
+            account_details = Account_Details.objects.get(username=username)
+            account_details.delete()
+        except Account_Details.DoesNotExist:
+            pass
+
+        # Delete account holder details
+        account_holder = Account_holders.objects.get(username=username)
+        account_holder.delete()
+
+        # Delete Django User model
+        try:
+            user = User.objects.get(username=username)
+            user.delete()
+        except User.DoesNotExist:
+            pass
+
+        return JsonResponse({'status': 'success'})
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
+
+# ------------------------Fix Deposite Data ------------------------------------
 
 def fix_deposit_list(request):
     fix_deposits = FixDepositeList.objects.all()
@@ -579,18 +908,6 @@ def fix_deposit_list(request):
 
     }
     return render(request, 'service_dir/fix_deposit_list.html',context)
-
-
-def service(request):
-    name = "None"
-    if request.user.is_authenticated:
-        profile_holder = get_object_or_404(Account_holders, user=request.user)
-        name = profile_holder.name
-    context = {
-        'name': name
-    }
-    return render(request, 'service_dir/service.html',context)
-
 
 def fix_deposite_details(request, fix_deposite_id):
 
@@ -686,146 +1003,6 @@ def fix_deposite_process_payment(request):
 
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
-
-def post_list(request):
-    name="none"
-    if request.user.is_authenticated:
-        profile_holder = get_object_or_404(Account_holders, user=request.user)
-        name = profile_holder.name
-
-    posts = Post.objects.all().order_by('-date')
-    paginator = Paginator(posts, 5)  # Show 5 posts per page.
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    context ={
-        'page_obj':page_obj,
-        'name':name
-    }
-    return render(request, 'post_list.html', context)
-
-@csrf_exempt
-def like_post(request, post_id):
-    if request.method == 'POST':
-        post = get_object_or_404(Post, id=post_id)
-        post.likes += 1
-        post.save()
-        return JsonResponse({'likes': post.likes})
-
-
-@login_required
-def user_setting(request):
-    profile = Account_holders.objects.get(username = request.user.username)
-    context = {
-        'name':profile.name,
-    }
-    return render(request,'user_setting_dir/user_setting.html',context)
-
-@login_required
-def user_activity(request):
-    user = request.user
-    profile = Account_holders.objects.get(username=user)
-    statuses = ['Running', 'Processing', 'Hold']
-    loans = UserLoanDetails.objects.filter(username=profile.username).filter(Q(loan_status='Running') | Q(loan_status='Processing') | Q(loan_status='Hold'))
-    fix_deposites = FixDepositeUsers.objects.filter(username=profile.username)
-
-    user_profile = {
-        "name":profile.name
-    }
-    context = {
-        'profile': user_profile,
-        "loans":loans,
-        "fix_deposites":fix_deposites,
-
-    }
-    return render(request, 'user_setting_dir/user_activity.html', context)
-
-
-def complaint_form(request):
-    profile_holder = get_object_or_404(Account_holders, user=request.user)
-    if request.method == "POST":
-        name = profile_holder.name
-        email = profile_holder.email
-        message = request.POST.get('message')
-        file = request.FILES.get('formFile')
-
-        complaint_id = str(uuid.uuid4())
-
-        complaint = Complaint(
-            name=name,
-            email=email,
-            message=message,
-            file=file,
-            complaint_id=complaint_id
-        )
-        complaint.save()
-
-        inbox_message(profile_holder, "Complaint", f"Complaint has been sent successfully.")
-
-        messages.success(request, 'Your complaint has been successfully sent!')
-        return redirect(reverse('complaint_form'))
-
-    recent_complaints = Complaint.objects.filter(email=profile_holder.email).order_by('-created_at')
-
-    context = {
-        'name': profile_holder.name,
-        'email': profile_holder.email,
-        'recent_complaints': recent_complaints,
-    }
-
-    return render(request, 'user_complaint.html', context)
-
-
-@login_required
-def hide_message(request):
-    if request.method == 'POST':
-        try:
-            profile = Account_holders.objects.get(user=request.user)
-            profile.message_seen = True
-            profile.save()
-            return JsonResponse({'status': 'ok'})
-        except Account_holders.DoesNotExist:
-            return JsonResponse({'status': 'error'})
-
-
-@login_required
-@csrf_exempt
-def delete_account(request):
-    if request.method == 'POST':
-        username = request.user.username
-
-        # Check if there are running or processing loans or fixed deposits
-        running_loans = UserLoanDetails.objects.filter(username=username, loan_status__in=['Running', 'Processing'])
-        running_deposits = FixDepositeUsers.objects.filter(username=username, fix_deposite_status='Running')
-
-        if running_loans.exists() or running_deposits.exists():
-            return JsonResponse({'status': 'error', 'message': "You can't delete your account with running or processing loans/deposits."})
-
-        # Delete User Inbox data
-        User_Inbox.objects.filter(username=username).delete()
-
-        try:
-            # Delete account details if they exist
-            account_details = Account_Details.objects.get(username=username)
-            account_details.delete()
-        except Account_Details.DoesNotExist:
-            pass
-
-        # Delete account holder details
-        account_holder = Account_holders.objects.get(username=username)
-        account_holder.delete()
-
-        # Delete Django User model
-        try:
-            user = User.objects.get(username=username)
-            user.delete()
-        except User.DoesNotExist:
-            pass
-
-        return JsonResponse({'status': 'success'})
-
-    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
-
-
 @login_required
 def fix_deposite_payment_details(request):
     fixDeposite_id = request.GET.get('id')
@@ -905,184 +1082,10 @@ def fix_deposite_payment_process(request):
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
 
-def delete_complaint(request, id):
-    if request.method == 'POST':
-        complaint = get_object_or_404(Complaint, id=id)
-        complaint.delete()
-        messages.success(request, 'Complaint deleted successfully.')
-    return redirect('complaint_form')  # Adjust 'complaint_page' to your actual complaint listing page name
+# ------------------------End Fix Deposite Data ------------------------------------
 
 
-@csrf_exempt  # Temporarily exempt CSRF to focus on troubleshooting
-def transfer_money(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            account = data.get('account')
-            amount = float(data.get('amount'))
-
-            user_account = Account_Details.objects.get(username=request.user.username)
-            atm_details = ATMCardModel.objects.get(account_no=user_account.account_no)
-            account_holder = Account_holders.objects.get(username=request.user.username)
-            user_name = account_holder.name
-
-
-            # Example: Perform money transfer logic here
-            if atm_details.net_banking_service:
-                if user_account.current_amt >= amount:
-                    # Deduct amount from current user's balance
-                    user_account.current_amt -= amount
-                    user_account.save()
-
-                    transaction_slip(account_holder, 000, "Debited", "Transfer", account, amount, "Account","Complete")
-                    inbox_message(account_holder, "Money Transfer", f"Your money of {amount} has been successfully transferred.")
-
-                    # Add amount to recipient's account
-                    try:
-                        recipient = Account_Details.objects.get(account_no=account)
-                        recipient.current_amt += amount
-                        recipient.save()
-
-                        recipient_account_holder = Account_holders.objects.get(username=recipient.username)
-                        transaction_slip(recipient_account_holder, 000, "Credited", "Recived", account, amount, "Account", "Success")
-
-                        inbox_message(recipient_account_holder, "Credited Money", f"{user_name} sent {amount} to your account")
-
-                       # messages.success(request, 'Money transferred successfully.')
-                        return JsonResponse({'message': 'Money transferred successfully.'})
-
-                    except Account_Details.DoesNotExist:
-                        #messages.error(request, 'Recipient account not found.')
-                        return JsonResponse({'message': 'Recipient account not found.'})
-
-                else:
-                    #messages.error(request, 'Insufficient balance to transfer money.')
-                    return JsonResponse({'message': 'Insufficient balance to transfer money.'}, status=400)
-            else:
-                return JsonResponse({'message': 'Net Banking Service is Disable.'}, status=404)
-
-        except Exception as e:
-            #messages.error(request, f'Error: {str(e)}')
-            return JsonResponse({'message': f'Error: {str(e)}'}, status=500)
-
-    return JsonResponse({'message': 'Method not allowed.'}, status=405)
-
-def fetch_user_data(request):
-    if request.method == 'GET':
-        account_input = request.GET.get('accountInput')
-
-        if account_input.isdigit():
-            account_details = get_object_or_404(Account_Details, account_no=account_input)
-        else:
-            account_details = get_object_or_404(Account_Details, upi_no=account_input)
-
-        user_data = {
-            'name': account_details.name,
-            'email': account_details.email,
-            'mobile': account_details.mobile,
-        }
-
-
-        if user_data:
-            return JsonResponse({'success': True, 'data': user_data})
-        else:
-            return JsonResponse({'success': False})
-
-    return render(request, 'users_dir/user_account.html')
-
-
-@login_required
-def verify_old_password(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        old_password = data.get('old_password')
-
-        if check_password(old_password, request.user.password):
-            return JsonResponse({'status': 'success'})
-        else:
-            return JsonResponse({'status': 'error', 'message': 'Old password is incorrect'})
-@login_required
-def change_password(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        new_password = data.get('new_password')
-
-        account_holder = Account_holders.objects.get(user=request.user)
-
-        account_holder.password = new_password
-        account_holder.save()
-
-        user = request.user
-        user.set_password(new_password)
-        user.save()
-
-        update_session_auth_hash(request, user)  # Prevents user from being logged out after password change
-        inbox_message(account_holder, "Password Changed","Your Password Successfully has been changed")
-        messages.success(request, 'Password changed successfully.')
-        return JsonResponse({'status': 'success'})
-
-    messages.error(request, 'Failed to change password.')
-    return JsonResponse({'status': 'error', 'message': 'Failed to change password.'})
-
-
-@csrf_exempt
-@require_POST
-def update_amount(request):
-    data = json.loads(request.body)
-    amount = float(data.get('amount'))
-    profile_holder = get_object_or_404(Account_holders, user=request.user)
-
-    if amount < 99:
-        inbox_message(profile_holder, "Failed Credited Money", f"Money Rs. {amount} Failed credited to your account")
-        return JsonResponse({'success': False, 'message': 'Failed to add money.'})
-
-    if amount is not None:
-
-        profile_data = get_object_or_404(Account_Details, username=profile_holder.username)
-
-        # Update current amount
-        profile_data.current_amt += amount
-        profile_data.save()
-        transaction_slip(profile_holder, 000, "Credited", "Add Money", "self", amount, "Credit Card", "Complete")
-
-        # Send inbox message
-        inbox_message(profile_holder, "Credited Money", f"Money Rs. {amount} Successfully credited to your account")
-
-        # Return JsonResponse with success message and updated amount
-        return JsonResponse({'success': True, 'message': 'Money added successfully.', 'new_amount': profile_data.current_amt})
-
-    return JsonResponse({'success': False, 'message': 'Failed to add money.'})
-
-def get_current_amount(request):
-    profile_holder = get_object_or_404(Account_holders, user=request.user)
-    profile_data = get_object_or_404(Account_Details, username=profile_holder.username)
-    return JsonResponse({'success': True, 'current_amount': profile_data.current_amt})
-
-
-def fetch_transaction_months(request):
-    profile_holder = get_object_or_404(Account_holders, user=request.user)
-    transactions = UserTransactionDetails.objects.filter(email=profile_holder.email).values('transaction_date').annotate(count=Count('transaction_date'))
-    months = {transaction['transaction_date'].strftime('%Y-%m') for transaction in transactions}
-
-    return JsonResponse({'months': sorted(months)})
-
-
-@csrf_exempt
-def delete_transactions(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        months = data.get('months', [])
-
-        if not months:
-            return JsonResponse({'success': False, 'error': 'No months selected'}, status=400)
-
-        try:
-            for month in months:
-                UserTransactionDetails.objects.filter(transaction_date__startswith=month).delete()
-            return JsonResponse({'success': True})
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)}, status=500)
-
+# ------------------------Customer Account List ------------------------------------
 def customer_account_list(request):
     profile_holder = get_object_or_404(Account_holders, user=request.user)
     #customer_accounts = CustomerListAccountModel.objects.all()  # Fetch all customer accounts
@@ -1169,6 +1172,33 @@ def get_customer_accounts(request):
         return JsonResponse(accounts_list, safe=False)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+# ------------------------End Customer Account List ------------------------------------
+
+# ------------------------Transaction ------------------------------------
+def fetch_transaction_months(request):
+    profile_holder = get_object_or_404(Account_holders, user=request.user)
+    transactions = UserTransactionDetails.objects.filter(email=profile_holder.email).values('transaction_date').annotate(count=Count('transaction_date'))
+    months = {transaction['transaction_date'].strftime('%Y-%m') for transaction in transactions}
+
+    return JsonResponse({'months': sorted(months)})
+
+@csrf_exempt
+def delete_transactions(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        months = data.get('months', [])
+
+        if not months:
+            return JsonResponse({'success': False, 'error': 'No months selected'}, status=400)
+
+        try:
+            for month in months:
+                UserTransactionDetails.objects.filter(transaction_date__startswith=month).delete()
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
 @login_required
 def user_transaction_statement(request):
     profile_holder = get_object_or_404(Account_holders, user=request.user)
@@ -1206,13 +1236,27 @@ def user_transaction_statement(request):
     }
     return render(request, 'users_dir/user_transaction_statement.html',context)
 
-
 @login_required
 def delete_transaction(request, id):
     transaction = UserTransactionDetails.objects.get(id=id, username=request.user)
     transaction.delete()
     return redirect('transaction_statement')
 
+@login_required
+def get_transactions(request):
+    transactions = UserTransactionDetails.objects.filter(username=request.user)
+    transaction_list = list(transactions.values(
+        'loan_id',
+        'amount',
+        'transaction_type',
+        'transaction_id',
+        'payment_status',
+        'payment_method',
+        'transaction_date'
+    ))
+    return JsonResponse({'data': transaction_list})
+
+# ------------------------End Transaction ------------------------------------
 
 def get_account_email(request):
     if request.method == 'GET':
@@ -1278,6 +1322,9 @@ def send_table_in_email(email, pdf_file):
     email_message = EmailMessage(subject, message, 'anshumk123@gmail.com', [email])
     email_message.attach('transaction_statement.pdf', pdf_file.read(), 'application/pdf')
     email_message.send()
+
+
+
 @csrf_exempt
 @login_required
 def user_profile(request):
@@ -1303,22 +1350,13 @@ def user_profile(request):
             'money_transfer_service': card_details.money_transfer_service,
             'transactions_by_otp':transactions_by_otp,
             'expiration_time_iso':expiration_time_iso,
+            'image_path':profile_holder.profile_photo if profile_holder.profile_photo else ""
         }
 
         return render(request, 'users_dir/user_profile.html',context)
 
-def atm_card_view(request):
-    profile_holder = get_object_or_404(Account_holders, user=request.user)
-    account_details = get_object_or_404(Account_Details, username=profile_holder.username)
-    card_details = ATMCardModel.objects.get(account_no=account_details.account_no)
-    chunks = [card_details.card_number[i:i + 4] for i in range(0, len(card_details.card_number), 4)]
 
-    context = {
-        'card_details':card_details,
-        'chunks':chunks
-    }
-    return render(request, 'users_dir/atm_card_view.html',context)
-
+# -------------------------------Action Center-------------------------------
 
 def action_center(request):
     profile_holder = get_object_or_404(Account_holders, user=request.user)
@@ -1336,7 +1374,22 @@ def action_detail(request, id):
         'content': action.content,
     }
     return JsonResponse(data)
+# ------------------------------- End Action Center-------------------------------
 
+
+
+# ------------------------------- ATM view-------------------------------
+def atm_card_view(request):
+    profile_holder = get_object_or_404(Account_holders, user=request.user)
+    account_details = get_object_or_404(Account_Details, username=profile_holder.username)
+    card_details = ATMCardModel.objects.get(account_no=account_details.account_no)
+    chunks = [card_details.card_number[i:i + 4] for i in range(0, len(card_details.card_number), 4)]
+
+    context = {
+        'card_details':card_details,
+        'chunks':chunks
+    }
+    return render(request, 'users_dir/atm_card_view.html',context)
 
 @csrf_exempt
 def update_service(request):
@@ -1373,56 +1426,6 @@ def update_service(request):
         except ATMCardModel.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Account not found'})
     return JsonResponse({'status': 'error', 'message': 'Invalid request'})
-
-
-@csrf_exempt
-def make_otp_transaction(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        amount = float(data.get('amount'))
-        pin = data.get('pin')
-        account_no = data.get('account_no')
-
-
-
-        try:
-            card_details = ATMCardModel.objects.get(account_no=account_no)
-            account_details = Account_Details.objects.get(account_no=account_no)
-
-            if card_details.pin == pin:
-                formatted_date_time_str = today_date_time()
-                kolkata_time = datetime.strptime(formatted_date_time_str, '%Y-%m-%d %I:%M %p')
-                expire_date = kolkata_time + timedelta(minutes=10)
-                date_obj = datetime.strptime(formatted_date_time_str, '%Y-%m-%d %I:%M %p')
-                otp = generate_otp()
-
-                expiration_time = kolkata_time + timedelta(minutes=15)
-                expiration_time_iso = expiration_time.isoformat()
-
-                transaction = TransactionSetByOtp.objects.create(
-                    user=account_details,
-                    username=card_details.username,
-                    name=card_details.name,
-                    email=card_details.email,
-                    mobile=account_details.mobile,  # Assuming mobile is a field in Account_Details
-                    transactionbyotp_id=generate_unique_transactionByOtp_id(),
-                    otp=otp,  # You would generate and handle OTP appropriately
-                    account_no=account_details.account_no,
-                    amount=amount,
-                    transaction_action=1,
-                    atm_card_number=card_details.card_number,
-                    transaction_status=False,
-                    issue_date=date_obj,
-                    expire_date=expiration_time_iso,
-                    description='Transaction completed'
-                )
-                return JsonResponse({'status': 'success'})
-            else:
-                return JsonResponse({'status': 'error', 'message': 'Invalid PIN'})
-        except ATMCardModel.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Account not found'})
-    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
-
 
 def ATMTransactionView(request):
 
@@ -1579,7 +1582,57 @@ def ATMTransactionView(request):
             return JsonResponse(response)
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=405)
+# -------------------------------End ATM view----------------------------
 
+
+# -------------------------------Transaction By OTP-----------------------
+@csrf_exempt
+def make_otp_transaction(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        amount = float(data.get('amount'))
+        pin = data.get('pin')
+        account_no = data.get('account_no')
+
+
+
+        try:
+            card_details = ATMCardModel.objects.get(account_no=account_no)
+            account_details = Account_Details.objects.get(account_no=account_no)
+
+            if card_details.pin == pin:
+                formatted_date_time_str = today_date_time()
+                kolkata_time = datetime.strptime(formatted_date_time_str, '%Y-%m-%d %I:%M %p')
+                expire_date = kolkata_time + timedelta(minutes=10)
+                date_obj = datetime.strptime(formatted_date_time_str, '%Y-%m-%d %I:%M %p')
+                otp = generate_otp()
+
+                expiration_time = kolkata_time + timedelta(minutes=15)
+                expiration_time_iso = expiration_time.isoformat()
+
+                transaction = TransactionSetByOtp.objects.create(
+                    user=account_details,
+                    username=card_details.username,
+                    name=card_details.name,
+                    email=card_details.email,
+                    mobile=account_details.mobile,  # Assuming mobile is a field in Account_Details
+                    transactionbyotp_id=generate_unique_transactionByOtp_id(),
+                    otp=otp,  # You would generate and handle OTP appropriately
+                    account_no=account_details.account_no,
+                    amount=amount,
+                    transaction_action=1,
+                    atm_card_number=card_details.card_number,
+                    transaction_status=False,
+                    issue_date=date_obj,
+                    expire_date=expiration_time_iso,
+                    description='Transaction completed'
+                )
+                return JsonResponse({'status': 'success'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Invalid PIN'})
+        except ATMCardModel.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Account not found'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
 
 @require_http_methods(["DELETE"])
 def delete_transactionByOtp(request, transaction_id):
@@ -1589,7 +1642,6 @@ def delete_transactionByOtp(request, transaction_id):
         return JsonResponse({'status': 'success'}, status=200)
     except TransactionSetByOtp.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Transaction not found'}, status=404)
-
 
 @csrf_exempt
 @require_POST
@@ -1606,3 +1658,43 @@ def transactionotp_end_session(request, transaction_id):
     else:
         return JsonResponse({'status': 'fail'})
 
+
+# -------------------------------End Transaction By OTP-----------------------
+
+
+@csrf_exempt
+def save_photo(request):
+    if request.method == 'POST':
+        try:
+            base64_image = request.POST.get('base64_image')
+            if base64_image:
+                filename = request.user.username
+                file_path = convert_base64_to_image(base64_image, filename)
+                code = convert_image_to_base64(file_path)
+
+                profile_holder = get_object_or_404(Account_holders, user=request.user)
+                profile_holder.profile_photo = file_path
+                profile_holder.photo = code
+                profile_holder.save()
+
+                new_image_url = f"{settings.MEDIA_URL}{file_path}".replace('\\', '/')
+                print(new_image_url)
+                return JsonResponse({'success': True, 'new_image_url': new_image_url})
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+@login_required
+def remove_photo(request):
+    if request.method == 'POST':
+        try:
+            profile_holder = get_object_or_404(Account_holders, user=request.user)
+            profile_holder.profile_photo = None
+            profile_holder.photo = ""
+            profile_holder.save()
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})

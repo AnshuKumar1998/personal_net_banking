@@ -7,6 +7,10 @@ from dateutil.relativedelta import relativedelta
 from .models import UserLoanDetails, Account_Details, User_Inbox, UserTransactionDetails,ATMCardModel,TransactionSetByOtp
 from django.utils import timezone
 import string
+import base64
+import os
+from django.conf import settings
+from django.core.files.base import ContentFile
 
 
 def today_date():
@@ -137,3 +141,41 @@ def generate_otp(length=6):
     otp = ''.join(random.choice(characters) for _ in range(length))
     return otp
 
+
+def convert_base64_to_image(base64_string, filename):
+    try:
+        # Check if the base64 string includes the format prefix
+        if ';base64,' in base64_string:
+            format, imgstr = base64_string.split(';base64,')
+            ext = format.split('/')[-1]
+        else:
+            # Default to jpg if no format is provided
+            imgstr = base64_string
+            ext = 'jpg'
+
+        img_data = base64.b64decode(imgstr)
+
+        # Create the user folder path
+        user_folder_path = os.path.join(settings.MEDIA_ROOT, 'user_login_data', filename)
+
+        # Create the directory if it does not exist
+        os.makedirs(user_folder_path, exist_ok=True)
+
+        # Create the file path
+        file_path = os.path.join(user_folder_path, f"{filename}.{ext}")
+
+        # Save the image file
+        with open(file_path, "wb") as fh:
+            fh.write(img_data)
+
+        return file_path
+    except Exception as e:
+        print(f"Error saving base64 image: {e}")
+        return None
+
+
+def convert_image_to_base64(image_path):
+    with open(image_path, "rb") as image_file:
+        image_data = image_file.read()
+        base64_encoded = base64.b64encode(image_data)
+        return base64_encoded.decode('utf-8')

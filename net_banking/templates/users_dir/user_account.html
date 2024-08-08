@@ -33,9 +33,9 @@
         <div class="col-md-3">
             <!-- Profile Section -->
             <div class="profile text-left mb-4">
-                {% if profile_data.profile_photo %}
-                <img src="{{ profile_data.profile_photo }}" alt="" class="profile-image" id="profileImage"> {% else %}
-                <img src="/static/images/sejal.jpg" alt="" class="profile-image" id="profileImage"> {% endif %}
+                {% if profile_data.image_path %}
+               <img src="{{ MEDIA_URL }}{{ profile_data.image_path }}" alt="" class="profile-image" id="profileImage" style="width: 170px; height: 200px;"> {% else %}
+                <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3.webp" alt="" class="profile-image" id="profileImage"> {% endif %}
                 <h4>Profile</h4>
                 <ul>
                     <li><strong>Username : </strong>&nbsp; {{ profile_data.username }}</li>
