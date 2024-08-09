@@ -1,9 +1,11 @@
 # help.py
-
+import shutil
 from datetime import datetime, timedelta
 import random
 import pytz
 from dateutil.relativedelta import relativedelta
+from django.http import HttpResponse
+
 from .models import UserLoanDetails, Account_Details, User_Inbox, UserTransactionDetails,ATMCardModel,TransactionSetByOtp
 from django.utils import timezone
 import string
@@ -179,3 +181,18 @@ def convert_image_to_base64(image_path):
         image_data = image_file.read()
         base64_encoded = base64.b64encode(image_data)
         return base64_encoded.decode('utf-8')
+
+def del_folder(base_directory):
+
+    base_directory = base_directory
+
+    if os.path.exists(base_directory):
+        for item in os.listdir(base_directory):
+            item_path = os.path.join(base_directory, item)
+            if os.path.isdir(item_path):
+                shutil.rmtree(item_path)
+            else:
+                os.remove(item_path)
+        return HttpResponse(f"All contents deleted from {base_directory}")
+    else:
+        return HttpResponse("Directory does not exist")

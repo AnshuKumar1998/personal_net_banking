@@ -1,5 +1,6 @@
 import base64
 import os
+import shutil
 import uuid
 import json
 from django.conf import settings
@@ -17,7 +18,7 @@ from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,Mon
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
-from app.help import today_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number, inbox_message,transaction_slip, create_atm_card,generate_otp,today_date_time,generate_unique_transactionByOtp_id,convert_base64_to_image,convert_image_to_base64
+from app.help import today_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number, inbox_message,transaction_slip, create_atm_card,generate_otp,today_date_time,generate_unique_transactionByOtp_id,convert_base64_to_image,convert_image_to_base64,del_folder
 from django.contrib.auth.models import User
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -226,6 +227,7 @@ def user_account(request):
 def logout(request):
 
     auth_logout(request)
+    del_folder('user_login_data')
     response = redirect('login')
     response.delete_cookie('sessionid')
     response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
@@ -1698,3 +1700,18 @@ def remove_photo(request):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
+def make_folder(request):
+    # Define the folder path
+    folder_path = os.path.join('path_to_your_directory', 'new_folder_name')
+
+    # Create the folder if it doesn't exist
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+        return HttpResponse(f"Folder created at {folder_path}")
+    else:
+        return HttpResponse("Folder already exists")
+
+
+

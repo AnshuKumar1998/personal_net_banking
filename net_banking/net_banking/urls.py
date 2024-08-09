@@ -177,6 +177,7 @@ urlpatterns = [
 
     path('save_photo/', views.save_photo, name='save_photo'),
 
+
 ]+ static(settings.MEDIA_URL,document_root = settings.MEDIA_ROOT)
 
 
