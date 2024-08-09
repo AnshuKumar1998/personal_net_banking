@@ -182,17 +182,10 @@ def convert_image_to_base64(image_path):
         base64_encoded = base64.b64encode(image_data)
         return base64_encoded.decode('utf-8')
 
-def del_folder(base_directory):
-
-    base_directory = base_directory
-
-    if os.path.exists(base_directory):
-        for item in os.listdir(base_directory):
-            item_path = os.path.join(base_directory, item)
-            if os.path.isdir(item_path):
-                shutil.rmtree(item_path)
-            else:
-                os.remove(item_path)
-        return HttpResponse(f"All contents deleted from {base_directory}")
+def delete_login_data_folder(user_login_folder_name):
+    folder_path = os.path.join('user_login_data', user_login_folder_name)
+    if os.path.exists(folder_path):
+        shutil.rmtree(folder_path)
+        return HttpResponse(f"Folder and its contents deleted from {folder_path}")
     else:
-        return HttpResponse("Directory does not exist")
+        return HttpResponse("Folder does not exist")

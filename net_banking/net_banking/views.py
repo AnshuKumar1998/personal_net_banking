@@ -18,7 +18,7 @@ from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,Mon
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
-from app.help import today_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number, inbox_message,transaction_slip, create_atm_card,generate_otp,today_date_time,generate_unique_transactionByOtp_id,convert_base64_to_image,convert_image_to_base64,del_folder
+from app.help import today_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number, inbox_message,transaction_slip, create_atm_card,generate_otp,today_date_time,generate_unique_transactionByOtp_id,convert_base64_to_image,convert_image_to_base64,delete_login_data_folder
 from django.contrib.auth.models import User
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -225,9 +225,9 @@ def user_account(request):
 
 
 def logout(request):
-
+    profile = Account_holders.objects.get(user=request.user)
+    delete_login_data_folder(profile.username)
     auth_logout(request)
-    del_folder('user_login_data')
     response = redirect('login')
     response.delete_cookie('sessionid')
     response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
