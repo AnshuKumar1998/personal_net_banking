@@ -165,6 +165,7 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="row">
                     <div class="col-md-6">
                         <div class="card mb-4 mb-md-0">
@@ -216,34 +217,31 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-----------------------------calander-------------------------------------->
                     <div class="col-md-6">
                         <div class="card mb-4 mb-md-0">
                             <div class="card-body">
-                                <p class="mb-4"><span class="text-primary font-italic me-1"></span><strong>ATM CARD SCORE</strong></p>
-                                <p class="mb-1" style="font-size: .77rem;">ATM Civil Score</p>
-                                <div class="progress rounded" style="height: 5px;">
-                                    <div class="progress-bar" role="progressbar" style="width: 80%" aria-valuenow="80" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
-                                <p class="mt-4 mb-1" style="font-size: .77rem;">Transaction Success Score</p>
-                                <div class="progress rounded" style="height: 5px;">
-                                    <div class="progress-bar" role="progressbar" style="width: 72%" aria-valuenow="72" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
-                                <p class="mt-4 mb-1" style="font-size: .77rem;">Transfer Money Score</p>
-                                <div class="progress rounded" style="height: 5px;">
-                                    <div class="progress-bar" role="progressbar" style="width: 89%" aria-valuenow="89" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
-                                <p class="mt-4 mb-1" style="font-size: .77rem;">Loan Paid At a Time Score</p>
-                                <div class="progress rounded" style="height: 5px;">
-                                    <div class="progress-bar" role="progressbar" style="width: 55%" aria-valuenow="55" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
-                                <p class="mt-4 mb-1" style="font-size: .77rem;">Over All</p>
-                                <div class="progress rounded mb-2" style="height: 5px;">
-                                    <div class="progress-bar" role="progressbar" style="width: 66%" aria-valuenow="66" aria-valuemin="0" aria-valuemax="100"></div>
+                                <!-- Existing content -->
+
+                                <!-- Calendar -->
+                                <div class="calendar-container mt-4">
+                                    <div class="calendar-header">
+                                        <button id="prevMonth" class="btn btn-sm btn-primary">&lt;</button>
+                                        <span id="currentMonth" class="mx-2"></span>
+                                        <button id="nextMonth" class="btn btn-sm btn-primary">&gt;</button>
+                                    </div>
+                                    <div id="calendar" class="mt-3"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+
+
+
                     <div class="col-md-6">
+                        <br>
                         <div class="card mb-4 mb-md-0">
                             <div class="card-body">
                                 <p class="mb-4">
@@ -302,6 +300,36 @@
                                     </li>
                                     {% endfor %}
                                 </ul>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="col-md-6">
+                        <br>
+                        <div class="card mb-4 mb-md-0">
+                            <div class="card-body">
+                                <p class="mb-4"><span class="text-primary font-italic me-1"></span><strong>ATM CARD SCORE</strong></p>
+                                <p class="mb-1" style="font-size: .77rem;">ATM Civil Score</p>
+                                <div class="progress rounded" style="height: 5px;">
+                                    <div class="progress-bar" role="progressbar" style="width: 80%" aria-valuenow="80" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <p class="mt-4 mb-1" style="font-size: .77rem;">Transaction Success Score</p>
+                                <div class="progress rounded" style="height: 5px;">
+                                    <div class="progress-bar" role="progressbar" style="width: 72%" aria-valuenow="72" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <p class="mt-4 mb-1" style="font-size: .77rem;">Transfer Money Score</p>
+                                <div class="progress rounded" style="height: 5px;">
+                                    <div class="progress-bar" role="progressbar" style="width: 89%" aria-valuenow="89" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <p class="mt-4 mb-1" style="font-size: .77rem;">Loan Paid At a Time Score</p>
+                                <div class="progress rounded" style="height: 5px;">
+                                    <div class="progress-bar" role="progressbar" style="width: 55%" aria-valuenow="55" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <p class="mt-4 mb-1" style="font-size: .77rem;">Over All</p>
+                                <div class="progress rounded mb-2" style="height: 5px;">
+                                    <div class="progress-bar" role="progressbar" style="width: 66%" aria-valuenow="66" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -448,7 +476,7 @@
          const cvvDisplay = document.getElementById('cvvDisplay');
 
          // Replace 'your-cvv-value' with the actual CVV value from the Django context or other source
-         const cvvValue = "123"; // Make sure this value is passed to the template
+         const cvvValue = {{ card_details.cvv }}; // Make sure this value is passed to the template
 
          eyeButton.addEventListener('click', () => {
            // Show CVV
@@ -759,6 +787,84 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 </script>
 
+<style>
+    /* Reduce table size */
+    .calendar-container table {
+        width: 100%;
+        font-size: 0.75rem; /* Smaller font size */
+    }
+
+    .calendar-container th, .calendar-container td {
+        text-align: center;
+        padding: 0.3rem; /* Smaller padding */
+    }
+
+    /* Highlight today's date */
+    .calendar-container .today {
+        background-color: #007bff;
+        color: white;
+        border-radius: 50%;
+    }
+</style>
+
+<script>
+    const calendarElement = document.getElementById('calendar');
+    const currentMonthElement = document.getElementById('currentMonth');
+    let currentDate = new Date();
+
+    function renderCalendar(date) {
+        const month = date.getMonth();
+        const year = date.getFullYear();
+
+        // Update the month display
+        const monthNames = [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ];
+        currentMonthElement.innerText = `${monthNames[month]} ${year}`;
+
+        // Generate the calendar
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        let calendarHTML = '<table class="table table-bordered"><thead><tr>';
+
+        const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        daysOfWeek.forEach(day => {
+            calendarHTML += `<th>${day}</th>`;
+        });
+        calendarHTML += '</tr></thead><tbody><tr>';
+
+        for (let i = 0; i < firstDay; i++) {
+            calendarHTML += '<td></td>';
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const isToday = day === new Date().getDate() &&
+                            month === new Date().getMonth() &&
+                            year === new Date().getFullYear();
+
+            if ((day + firstDay - 1) % 7 === 0) {
+                calendarHTML += '</tr><tr>';
+            }
+
+            calendarHTML += `<td class="${isToday ? 'today' : ''}">${day}</td>`;
+        }
+        calendarHTML += '</tr></tbody></table>';
+
+        calendarElement.innerHTML = calendarHTML;
+    }
+
+    function changeMonth(offset) {
+        currentDate.setMonth(currentDate.getMonth() + offset);
+        renderCalendar(currentDate);
+    }
+
+    document.getElementById('prevMonth').addEventListener('click', () => changeMonth(-1));
+    document.getElementById('nextMonth').addEventListener('click', () => changeMonth(1));
+
+    // Render the initial calendar
+    renderCalendar(currentDate);
+</script>
 
 <!-- Add Font Awesome CSS for the icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
