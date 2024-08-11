@@ -1,4 +1,5 @@
 {% extends 'master.html' %}
+{% load static %}
 {% block body %}
 <!-- inner-banner -->
 <section class="inner-banner" id="home">
@@ -40,73 +41,86 @@
                </ul>
             </div>
             {% endif %}
-           <form name="signup" id="signup" method="post" action="{% url 'signup' %}" enctype="multipart/form-data" onsubmit="return(validate());" novalidate="novalidate">
-             {% csrf_token %}
-             <div class="form-group">
-                 <label>Username</label>
-                 <input type="text" class="form-control" placeholder="Enter Username" name="username">
-             </div>
-             <div class="form-group">
-                 <label>Name</label>
-                 <input type="text" class="form-control" placeholder="Enter Name" name="name">
-             </div>
-             <div class="form-group">
-                 <label>Email</label>
-                 <input type="email" class="form-control" placeholder="Enter Email" name="email">
-             </div>
-             <div class="form-group">
-                 <label for="gender">Gender</label>
-                 <select class="form-control" id="gender" name="gender" style="height: 60px;" required>
-                     <option value="" disabled selected>Select Gender</option>
-                     <option value="Male">Male</option>
-                     <option value="Female">Female</option>
-                     <option value="Other">Other</option>
-                 </select>
-             </div>
-             <div class="form-group">
-                 <label for="mobile">Mobile</label>
-                 <input type="text" class="form-control" id="mobile" name="mobile" required>
-             </div>
-             <div class="form-group">
-                 <label for="dob">Date of Birth</label>
-                 <input type="date" class="form-control" id="dob" name="dob" required>
-             </div>
-             <div class="form-group">
-                 <label>Address</label>
-                 <textarea class="form-control" name="address" placeholder="Enter Your Address"></textarea>
-             </div>
-             <div class="form-group">
-                 <label for="password">Password</label>
-                 <input type="password" class="form-control" id="password" name="password" required>
-             </div>
+          <form name="signup" id="signup" method="post" action="{% url 'signup' %}" enctype="multipart/form-data" onsubmit="return(validate());" novalidate="novalidate">
+    {% csrf_token %}
+    <div class="form-group">
+        <label>Username</label>
+        <input type="text" class="form-control" placeholder="Enter Username" name="username" value="{{ name }}">
+    </div>
+    <div class="form-group">
+        <label>Name</label>
+        <input type="text" class="form-control" placeholder="Enter Name" name="name" value="{{ name }}">
+    </div>
+    <div class="form-group">
+        <label>Email</label>
+        <input type="email" class="form-control" placeholder="Enter Email" name="email" value="{{ email }}">
+    </div>
+    <div class="form-group">
+        <label for="gender">Gender</label>
+        <select class="form-control" id="gender" name="gender" style="height: 60px;" required>
+            <option value="" disabled {% if not gender %}selected{% endif %}>Select Gender</option>
+            <option value="Male" {% if gender == 'Male' %}selected{% endif %}>Male</option>
+            <option value="Female" {% if gender == 'Female' %}selected{% endif %}>Female</option>
+            <option value="Other" {% if gender == 'Other' %}selected{% endif %}>Other</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="mobile">Mobile</label>
+        <input type="text" class="form-control" id="mobile" name="mobile" value="{{ phone }}" required>
+    </div>
+    <div class="form-group">
+        <label for="dob">Date of Birth</label>
+        <input type="date" class="form-control" id="dob" name="dob" value="{{ dob }}" required>
+    </div>
+    <div class="form-group">
+        <label>Address</label>
+        <textarea class="form-control" name="address" placeholder="Enter Your Address"></textarea>
+    </div>
+    <div class="form-group">
+        <label for="password">Password</label>
+        <div class="password-container">
+            <input type="password" class="form-control password-input" id="password" name="password" required>
+            <i class="fas fa-eye eye-icon" id="togglePassword"></i>
+        </div>
+    </div>
 
-             <button type="submit" class="btn btn-default">Submit</button>
-         </form>
+    <button type="submit" class="btn btn-default">Submit</button>
+</form>
+
          </div>
          <div class="col-lg-4 col-md-6 contact-address">
-            <h4 class="mb-4 w3f_title">Contact Address</h4>
+            <h4 class="mb-4 w3f_title">Sign Up By Social Media</h4>
             <ul class="list-w3">
-               <li class="d-flex"><span class="fa mt-1 mr-1 fa-map-marker"></span>163 Palihari Gurudih Main Road, <br>Gomia, 829111</li>
-               <li class="my-3"><span class="fa mr-1 fa-phone"></span>+91 8409202262</li>
-               <li class="my-3"><span class="fa mr-1 fa-phone"></span>+91 8409202262</li>
-               <li class=""><span class="fa mr-1 fa-envelope"></span><a href="mailto:anshumk123@gmail.com">anshumk123@gmail.com</a></li>
+                 <li><a style="text-decoration: none;" href="#">
+                     <i class="bi bi-facebook" style="font-size: 24px; vertical-align: middle; color: #4267B2;"></i>
+                     <span style="vertical-align: middle;">Sign in with Meta</span></a>
+                </li><a style="text-decoration: none;" href="{% url 'social:begin' 'google-oauth2' %}">
+                <li class="my-3"><i class="fab fa-google" style="font-size: 24px; vertical-align: middle; color: #D44638;"></i>
+                    <span style="vertical-align: middle;">Sign in with Gmail</span></a>
+                </li>
             </ul>
-            <h4 class="mt-sm-5 mt-4 mb-3 w3f_title">Follow Us</h4>
-            <p>You Can Follow For Lastest Update</p>
-            <ul class="list-social">
-               <li><a href="#" class="facebook"><span class="fa mr-1 fa-facebook"></span></a></li>
-               <li class="my-3"><a href="#" class="twitter"><span class="fa mr-1 fa-twitter"></span></a></li>
-               <li class="my-3"><a href="#" class="google"><span class="fa mr-1 fa-google-plus"></span></a></li>
-               <li class=""><a href="#" class="linkedin"><span class="fa mr-1 fa-linkedin"></span></a></li>
+
+            <h4 class="mt-sm-5 mt-4 mb-3 w3f_title">You Can Contact Our Team</h4>
+            <p>We are available for you 24*7</p>
+
+            <ul class="list-w3">
+                <li class="my-3"><span class="fa mr-1 fa-phone"></span>+91 7903539817</li>
+                <li class="my-3"><span class="fa mr-1 fa-phone"></span>+91 8409202262</li>
+                <li class=""><span class="fa mr-1 fa-envelope"></span><a href="mailto:anshumk123@gmail.com">anshumk123@gmail.com</a></li>
             </ul>
          </div>
          <div class="col-lg-4 contact-map mt-lg-0 mt-sm-5 mt-4">
-            <h4 class="mb-4 w3f_title">Contact Map</h4>
-            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3023.9503398796587!2d-73.9940307!3d40.719109700000004!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25a27e2f24131%3A0x64ffc98d24069f02!2sCANADA!5e0!3m2!1sen!2sin!4v1441710758555" allowfullscreen=""></iframe>
-         </div>
+            <h4 class="mb-4 w3f_title"></h4>
+            <img src="{% static 'advertisment_img/codeand-debug.gif' %}" alt="Code and Debug GIF" class="img-fluid" style="width: 1000px; height: 400px;">
+        </div>
       </div>
    </div>
 </section>
+<link rel="stylesheet" href="{% static 'css/signup.css' %}">
+<script src="{% static 'js/signup.js' %}"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"> <!-- for meta icon -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> <!-- for gmail icon -->
+
 <!-- Show modal if there are messages -->
 {% if messages %}
 <script>
@@ -116,4 +130,18 @@
 </script>
 {% endif %}
 <!-- //contact -->
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const userData = {{ user_data|safe }}; // Assuming user_data is passed to the template
+
+        if (userData) {
+            document.querySelector('input[name="username"]').value = userData.username;
+            document.querySelector('input[name="email"]').value = userData.email;
+            document.querySelector('input[name="mobile"]').value = userData.mobile || '';
+            document.querySelector('select[name="gender"]').value = userData.gender || '';
+            document.querySelector('input[name="dob"]').value = userData.dob || '';
+        }
+    });
+</script>
 {% endblock %}

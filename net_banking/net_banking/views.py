@@ -4,6 +4,7 @@ import shutil
 import uuid
 import json
 from django.conf import settings
+from django.contrib.sites import requests
 from django.core.files.storage import default_storage
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
@@ -34,6 +35,11 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib import colors
 from django.utils.dateformat import format
 from datetime import datetime, timedelta
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from django.conf import settings
+from social_django.models import UserSocialAuth
+
 
 logger = logging.getLogger(__name__)
 
@@ -225,8 +231,19 @@ def user_account(request):
 
 
 def logout(request):
-    profile = Account_holders.objects.get(user=request.user)
-    delete_login_data_folder(profile.username)
+    if request.user:
+        profile = Account_holders.objects.get(user=request.user)
+        delete_login_data_folder(profile.username)
+    auth_logout(request)
+    response = redirect('login')
+    response.delete_cookie('sessionid')
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+
+    return response
+
+def logout_gmail(request):
     auth_logout(request)
     response = redirect('login')
     response.delete_cookie('sessionid')
@@ -237,6 +254,20 @@ def logout(request):
     return response
 
 def new_account_holder(request):
+    name = request.GET.get('name', '')
+    email = request.GET.get('email', '')
+    gender = request.GET.get('gender', '')
+    phone = request.GET.get('phone', '')
+    dob = request.GET.get('dob', '')
+
+    # Pass data to the template context
+    context = {
+        'name': name,
+        'email': email,
+        'gender': gender,
+        'phone': phone,
+        'dob': dob,
+    }
     if request.method == 'POST':
         username = request.POST.get('username')
         name = request.POST.get('name')
@@ -276,7 +307,7 @@ def new_account_holder(request):
             messages.success(request, 'Your Account Has Been Created successfully!')
             return redirect('signup')
 
-    return render(request, 'users_dir/signup.html')
+    return render(request, 'users_dir/signup.html',context)
 
 @login_required
 def activate(request):
@@ -572,6 +603,55 @@ def get_current_amount(request):
     profile_holder = get_object_or_404(Account_holders, user=request.user)
     profile_data = get_object_or_404(Account_Details, username=profile_holder.username)
     return JsonResponse({'success': True, 'current_amount': profile_data.current_amt})
+
+@csrf_exempt
+def save_photo(request):
+    if request.method == 'POST':
+        try:
+            base64_image = request.POST.get('base64_image')
+            if base64_image:
+                filename = request.user.username
+                file_path = convert_base64_to_image(base64_image, filename)
+                code = convert_image_to_base64(file_path)
+
+                profile_holder = get_object_or_404(Account_holders, user=request.user)
+                profile_holder.profile_photo = file_path
+                profile_holder.photo = code
+                profile_holder.save()
+
+                new_image_url = f"{settings.MEDIA_URL}{file_path}".replace('\\', '/')
+                print(new_image_url)
+                return JsonResponse({'success': True, 'new_image_url': new_image_url})
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+@login_required
+def remove_photo(request):
+    if request.method == 'POST':
+        try:
+            profile_holder = get_object_or_404(Account_holders, user=request.user)
+            profile_holder.profile_photo = None
+            profile_holder.photo = ""
+            profile_holder.save()
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
+def make_folder(request):
+    # Define the folder path
+    folder_path = os.path.join('path_to_your_directory', 'new_folder_name')
+
+    # Create the folder if it doesn't exist
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+        return HttpResponse(f"Folder created at {folder_path}")
+    else:
+        return HttpResponse("Folder already exists")
 
 
 #---------------------End user account-----------------------
@@ -1664,54 +1744,43 @@ def transactionotp_end_session(request, transaction_id):
 # -------------------------------End Transaction By OTP-----------------------
 
 
-@csrf_exempt
-def save_photo(request):
-    if request.method == 'POST':
-        try:
-            base64_image = request.POST.get('base64_image')
-            if base64_image:
-                filename = request.user.username
-                file_path = convert_base64_to_image(base64_image, filename)
-                code = convert_image_to_base64(file_path)
-
-                profile_holder = get_object_or_404(Account_holders, user=request.user)
-                profile_holder.profile_photo = file_path
-                profile_holder.photo = code
-                profile_holder.save()
-
-                new_image_url = f"{settings.MEDIA_URL}{file_path}".replace('\\', '/')
-                print(new_image_url)
-                return JsonResponse({'success': True, 'new_image_url': new_image_url})
-
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
-
-    return JsonResponse({'success': False, 'error': 'Invalid request method'})
-
 @login_required
-def remove_photo(request):
-    if request.method == 'POST':
-        try:
-            profile_holder = get_object_or_404(Account_holders, user=request.user)
-            profile_holder.profile_photo = None
-            profile_holder.photo = ""
-            profile_holder.save()
-            return JsonResponse({'success': True})
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
-    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+def google_login_callback(request):
+    user = request.user
 
+    try:
+        # Get the access token from social auth
+        social_auth = UserSocialAuth.objects.get(user=user, provider='google-oauth2')
+        access_token = social_auth.extra_data['access_token']
 
-def make_folder(request):
-    # Define the folder path
-    folder_path = os.path.join('path_to_your_directory', 'new_folder_name')
+        # Initialize Google People API
+        credentials = Credentials(token=access_token)
+        service = build('people', 'v1', credentials=credentials)
 
-    # Create the folder if it doesn't exist
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-        return HttpResponse(f"Folder created at {folder_path}")
-    else:
-        return HttpResponse("Folder already exists")
+        # Fetch profile details
+        profile = service.people().get(resourceName='people/me',
+                                       personFields='birthdays,genders,phoneNumbers').execute()
 
+        # Extract information
+        gender = profile.get('genders', [{}])[0].get('value', 'Not Specified')
+        phone_number = profile.get('phoneNumbers', [{}])[0].get('value', 'Not Available')
+        dob = profile.get('birthdays', [{}])[0].get('date', 'Not Available')
 
+        # Construct the query string with user details
+        query_params = {
+            'name': f"{user.first_name} {user.last_name}",
+            'email': user.email,
+            'gender': gender,
+            'phone': phone_number,
+            'dob': dob
+        }
 
+        query_string = '&'.join([f"{key}={value}" for key, value in query_params.items()])
+        redirect_url = f"/signup/?{query_string}"
+
+    except Exception as e:
+        print(f"Error retrieving profile: {e}")
+        redirect_url = '/signup/'
+
+    logout_gmail(request)
+    return redirect(redirect_url)

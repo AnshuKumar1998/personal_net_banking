@@ -19,8 +19,9 @@ from django.contrib import admin
 from .import views
 from django.conf import settings
 from django.conf.urls.static import static
-from django.urls import path, reverse_lazy
+from django.urls import path, reverse_lazy, include
 from django.contrib.auth import views as auth_views
+
 
 
 urlpatterns = [
@@ -176,6 +177,9 @@ urlpatterns = [
     path('remove_photo/', views.remove_photo, name='remove_photo'),
 
     path('save_photo/', views.save_photo, name='save_photo'),
+    path('social-auth/', include('social_django.urls', namespace='social')),
+    path('google/callback/', views.google_login_callback, name='google_callback'),
+    path('google-login-callback/', views.google_login_callback, name='google_login_callback'),
 
 
 ]+ static(settings.MEDIA_URL,document_root = settings.MEDIA_ROOT)
