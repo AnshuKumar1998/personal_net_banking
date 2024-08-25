@@ -469,7 +469,7 @@
         });
       });
     });
-</script>
+</script>  <!--- atm card service js -->
 <script>
     document.addEventListener('DOMContentLoaded', () => {
          const eyeButton = document.getElementById('eyeButton');
@@ -488,12 +488,13 @@
            }, 1000);
          });
        });
-</script>
+</script>   <!--- cvv hide js -->
 <script>
    document.addEventListener('DOMContentLoaded', () => {
     const makeTransactionBtn = document.getElementById('makeTransactionBtn');
     const transactionForm = document.getElementById('transactionForm');
     const transactionModal = new bootstrap.Modal(document.getElementById('transactionModal'));
+    const scrollPosition = window.scrollY;
 
     history.pushState({ scrollTop: window.pageYOffset }, '', window.location.href);
 
@@ -524,6 +525,9 @@
             if (data.status === 'success') {
                 alert('Transaction successful!');
                 location.reload();
+                 window.addEventListener('load', () => {
+                        window.scrollTo(0, scrollPosition);
+                    });
                 transactionModal.hide();
             } else {
                 alert('Transaction failed: ' + data.message);
@@ -573,142 +577,129 @@
     }
 });
 
-</script>
+</script>   <!--- make transaction js -->
 <style>
     .custom-list-item:hover {
         background-color: transparent !important; /* Prevent background color change on hover */
     }
 </style>
 
+
 <script>
-    function convertToISOFormat(dateString) {
-    // Parse the date string to get individual components
-    const parts = dateString.match(/(\w+)\. (\d+), (\d+), (\d+):(\d+) (\w+)\./);
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    function getCurrentTimeInKolkata() {
+        // Define options for formatting the date and time
+        const options = {
+            timeZone: 'Asia/Kolkata',
+            hour12: false, // Use 24-hour format for simplicity in calculations
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        };
 
-    const month = monthNames.indexOf(parts[1]) + 1;
-    const day = parseInt(parts[2]);
-    const year = parseInt(parts[3]);
-    let hour = parseInt(parts[4]);
-    const minute = parseInt(parts[5]);
-    const period = parts[6];
+        // Get the current time in the "Asia/Kolkata" time zone
+        const now = new Date();
+        const nowInKolkata = now.toLocaleString('en-GB', options);
 
-    // Adjust hour based on AM/PM
-    if (period === "p.m." && hour !== 12) {
-        hour += 12;
-    } else if (period === "a.m." && hour === 12) {
-        hour = 0;
+        // Convert the current time to Unix epoch time
+        const unixEpochTime = Math.floor(now.getTime() / 1000);
+
+        // Return the formatted time and Unix epoch time
+        return {
+            timeInKolkata: nowInKolkata,
+            unixEpochTime: unixEpochTime
+        };
     }
 
-    // Create a new Date object in the local time zone
-    const date = new Date(year, month - 1, day, hour, minute);
+    document.addEventListener('DOMContentLoaded', () => {
+        function updateCountdown() {
+            document.querySelectorAll('.countdown-timer').forEach(timer => {
+                const rawExpireDateString = parseInt(timer.getAttribute('data-expire-date'), 10);
+                const result = getCurrentTimeInKolkata();
 
-    // Get the ISO string representation of the date
-    const isoString = date.toISOString();
+                const distance = rawExpireDateString - result.unixEpochTime;
 
-    return isoString;
-}
-function format12HourClock() {
-    // Create a Date object for the current time
-    const now = new Date();
+                if (distance < 0) {
+                    timer.value = "Expired";
 
-    // Create a formatter for the 12-hour time format with AM/PM
-    const formatter = new Intl.DateTimeFormat('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true // Use 12-hour format
-    });
+                    // Find the closest 'end-session-btn' related to this timer
+                    const endSessionButton = timer.closest('.row').querySelector('.end-session-btn');
 
-    // Format the current time
-    return formatter.format(now);
+                    if (endSessionButton) {
+                        // Directly call the function with the button as target
+                        handleEndSessionButtonClick({ target: endSessionButton });
+                    }
+                    return;
+                }
 
-}
+                const totalMinutes = Math.floor(distance / 60);
+                const minutes = totalMinutes % 60;
+                const seconds = distance % 60;
 
+                // Update timer value
+                timer.value = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            });
+        }
 
-document.addEventListener('DOMContentLoaded', () => {
-    function updateCountdown() {
-        document.querySelectorAll('.countdown-timer').forEach(timer => {
-           const rawExpireDateString = timer.getAttribute('data-expire-date');
-            const expireDateString = convertToISOFormat(rawExpireDateString);
-             const expireDate = new Date(expireDateString).getTime();
+        function handleEndSessionButtonClick(event) {
+            const button = event.target;
+            const transactionId = button.getAttribute('data-id');
+            const scrollPosition = window.scrollY;
 
-            const now = format12HourClock();
-           // console.log(expireDate);
-            const date = new Date(expireDate);
-            const dateString = date.toString();
+            fetch(`/end_session/${transactionId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({ transaction_id: transactionId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    location.reload();
+                     window.addEventListener('load', () => {
+                        window.scrollTo(0, scrollPosition);
+                    });
+                    const timerElement = button.closest('.row').querySelector('.countdown-timer');
 
+                    timerElement.value = "Expired";
+                    button.closest('li').classList.add('expired');
 
-            const distance = (expireDate - now);
+                } else {
+                    alert('Failed to end session');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
 
-            if(expireDate>now)
-                console.log("expire");
-            else
-              //  console.log("now");
-
-
-            if (isNaN(expireDate) || distance < 0) {
-                timer.value = "Expired";
-                return;
-            }
-
-            const totalMinutes = Math.floor(distance / (1000 * 60)) ;
-            const minutes = totalMinutes % 60;
-            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-            timer.value = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
+        // Attach event listeners to all end-session buttons initially
+        document.querySelectorAll('.end-session-btn').forEach(button => {
+            button.addEventListener('click', handleEndSessionButtonClick);
         });
-    }
 
-    function handleEndSessionButtonClick(event) {
-        const button = event.target;
-        const transactionId = button.getAttribute('data-id');
+        // Call updateCountdown periodically
+        setInterval(updateCountdown, 1000); // Update every second
 
-        fetch(`/end_session/${transactionId}/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken'),
-            },
-            body: JSON.stringify({ transaction_id: transactionId })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                const timerElement = button.closest('.row').querySelector('.countdown-timer');
-                location.reload();
-                timerElement.value = "00:00";
-                button.closest('li').classList.add('expired');
-
-            } else {
-                alert('Failed to end session');
-            }
-        })
-        .catch(error => console.error('Error:', error));
-    }
-
-    document.querySelectorAll('.end-session-btn').forEach(button => {
-        button.addEventListener('click', handleEndSessionButtonClick);
-    });
-
-    setInterval(updateCountdown, 1000);
-
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
                 }
             }
+            return cookieValue;
         }
-        return cookieValue;
-    }
-});
-</script>
+    });
+</script> <!--- transaction timer js -->
+
 <script>
     $(document).ready(function(){
         $('#removePhotoBtn').click(function(){
@@ -731,7 +722,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     });
-</script>
+</script>   <!--- remove photo js -->
 
 <script>
     document.getElementById('changePhotoBtn').addEventListener('click', function() {
@@ -785,7 +776,7 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.readAsDataURL(file);
         }
     }
-</script>
+</script>   <!--- change photo js -->
 
 <style>
     /* Reduce table size */
@@ -864,7 +855,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Render the initial calendar
     renderCalendar(currentDate);
-</script>
+</script>   <!--- calender js -->
 
 <!-- Add Font Awesome CSS for the icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">

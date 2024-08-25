@@ -21,6 +21,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path, reverse_lazy, include
 from django.contrib.auth import views as auth_views
+from django.conf.urls import handler404
 
 
 
@@ -183,5 +184,6 @@ urlpatterns = [
 
 
 ]+ static(settings.MEDIA_URL,document_root = settings.MEDIA_ROOT)
+
 
 

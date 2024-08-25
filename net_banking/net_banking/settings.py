@@ -28,6 +28,8 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
+
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -39,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'app.apps.AppConfig',
     'social_django',
+    'storages',
 ]
 
 MIDDLEWARE = [
@@ -199,3 +202,22 @@ SOCIAL_AUTH_PIPELINE = (
 
 
 SOCIAL_AUTH_LOGIN_ERROR_URL = '/login-error/'
+
+
+# AWS S3 settings
+AWS_ACCESS_KEY_ID = 'AKIA4MTWIRAMSXRFZ2WL'
+AWS_SECRET_ACCESS_KEY = 'kiAZZSJDpm1u07FMai5eogp/b14ZwThscRbp9Pwd'
+AWS_STORAGE_BUCKET_NAME = 'testbucketawss'
+AWS_S3_REGION_NAME = 'ap-south-1'  # e.g., 'us-east-1'
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+
+# Static files (CSS, JavaScript, images)
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
+
+# Media files (User-uploaded content)
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+
+
+

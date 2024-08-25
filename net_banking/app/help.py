@@ -189,3 +189,16 @@ def delete_login_data_folder(user_login_folder_name):
         return HttpResponse(f"Folder and its contents deleted from {folder_path}")
     else:
         return HttpResponse("Folder does not exist")
+
+
+def kolkata_time_to_unix_time(date_and_time):
+    # Check if the input is already a datetime object
+    if isinstance(date_and_time, datetime):
+        date_object = date_and_time
+    else:
+        # Convert from string to datetime if it's not already a datetime object
+        date_object = datetime.strptime(date_and_time, "%Y-%m-%d %H:%M:%S")
+
+    # Convert to Unix timestamp
+    unix_timestamp = int(date_object.timestamp())
+    return unix_timestamp

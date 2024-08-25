@@ -3,6 +3,7 @@ import os
 import shutil
 import uuid
 import json
+from django.http import HttpResponseNotFound
 from django.conf import settings
 from django.contrib.sites import requests
 from django.core.files.storage import default_storage
@@ -19,7 +20,7 @@ from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,Mon
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
-from app.help import today_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number, inbox_message,transaction_slip, create_atm_card,generate_otp,today_date_time,generate_unique_transactionByOtp_id,convert_base64_to_image,convert_image_to_base64,delete_login_data_folder
+from app.help import today_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number, inbox_message,transaction_slip, create_atm_card,generate_otp,today_date_time,generate_unique_transactionByOtp_id,convert_base64_to_image,convert_image_to_base64,delete_login_data_folder,kolkata_time_to_unix_time
 from django.contrib.auth.models import User
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -231,9 +232,9 @@ def user_account(request):
 
 
 def logout(request):
-    if request.user:
-        profile = Account_holders.objects.get(user=request.user)
-        delete_login_data_folder(profile.username)
+
+    profile = Account_holders.objects.get(user=request.user)
+    delete_login_data_folder(profile.username)
     auth_logout(request)
     response = redirect('login')
     response.delete_cookie('sessionid')
@@ -314,6 +315,8 @@ def activate(request):
     if request.method == 'POST':
         pan_no = request.POST.get('pancard')
         aadhar_no = request.POST.get('aadharno')
+        atm_card = request.POST.get('atm')
+        net_banking = request.POST.get('net_banking')
 
 
         # Check if PAN number or Aadhar number already exists
@@ -353,7 +356,8 @@ def activate(request):
             last_login= timezone.now(),
             aadhar_no=request.POST['aadharno']
         )
-        create_atm_card(account_holder,account_details)
+        if atm_card:
+            create_atm_card(account_holder,account_details)
         account_holder.account_status = 'Active'  # Example: Updating account_status column
         account_holder.save()
         inbox_message(account_holder,"Account Activation","Your account has been successfully activated.")
@@ -1685,12 +1689,11 @@ def make_otp_transaction(request):
             if card_details.pin == pin:
                 formatted_date_time_str = today_date_time()
                 kolkata_time = datetime.strptime(formatted_date_time_str, '%Y-%m-%d %I:%M %p')
-                expire_date = kolkata_time + timedelta(minutes=10)
-                date_obj = datetime.strptime(formatted_date_time_str, '%Y-%m-%d %I:%M %p')
-                otp = generate_otp()
+                today_time_unix_form = kolkata_time_to_unix_time(kolkata_time)
+                expire_date = kolkata_time + timedelta(minutes=1)
+                expire_date_unix_form = kolkata_time_to_unix_time(expire_date)
 
-                expiration_time = kolkata_time + timedelta(minutes=15)
-                expiration_time_iso = expiration_time.isoformat()
+                otp = generate_otp()
 
                 transaction = TransactionSetByOtp.objects.create(
                     user=account_details,
@@ -1705,8 +1708,8 @@ def make_otp_transaction(request):
                     transaction_action=1,
                     atm_card_number=card_details.card_number,
                     transaction_status=False,
-                    issue_date=date_obj,
-                    expire_date=expiration_time_iso,
+                    issue_date=today_time_unix_form,
+                    expire_date=expire_date_unix_form,
                     description='Transaction completed'
                 )
                 return JsonResponse({'status': 'success'})
@@ -1729,6 +1732,7 @@ def delete_transactionByOtp(request, transaction_id):
 @require_POST
 def transactionotp_end_session(request, transaction_id):
     if request.method == 'POST':
+        print("Hello")
         print(transaction_id)  # Debugging line to verify transaction_id
         transaction = get_object_or_404(TransactionSetByOtp, transactionbyotp_id=transaction_id)
 
@@ -1742,9 +1746,10 @@ def transactionotp_end_session(request, transaction_id):
 
 
 # -------------------------------End Transaction By OTP-----------------------
+def custom_404(request, exception=None):
+    return render(request, '404.html', status=404)
 
 
-@login_required
 def google_login_callback(request):
     user = request.user
 

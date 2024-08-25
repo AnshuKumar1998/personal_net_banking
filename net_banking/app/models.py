@@ -322,9 +322,16 @@ class TransactionSetByOtp(models.Model):
     atm_card_number = models.CharField(max_length=20)
     transaction_status = models.BooleanField(default=True)
     transaction_action = models.BooleanField(default=True)
-    issue_date = models.DateTimeField(default=timezone.now)
-    expire_date = models.DateTimeField(default=timezone.now)
+    issue_date = models.BigIntegerField(default=0)
+    expire_date = models.BigIntegerField(default=0)
     description = models.CharField(max_length=200)
+
+    def save(self, *args, **kwargs):
+        if not self.pk:  # Only set defaults when creating a new instance
+            now = timezone.now()
+            self.issue_timestamp = int(now.timestamp())
+            self.expire_timestamp = int(now.timestamp())
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} - {self.atm_card_number} - {self.amount} - {self.transaction_status}"

@@ -170,6 +170,7 @@
         <h2 class="text-center text-black mb-4">Profit Chart</h2>
         <div class="chart-container bg-dark p-4 rounded">
             <canvas id="profitChart" width="400" height="200"></canvas>
+
         </div>
     </div>
     <!-- End Profit Chart -->
@@ -485,12 +486,20 @@
                         <label for="recipient-name" class="col-form-label">Aadhar Card :</label>
                         <input type="text" class="form-control" name="aadharno" id="aadharno">
                     </div>
+                     <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="atm" value="1" id="check3">
+                        <label class="form-check-label" for="check3">&nbsp;&nbsp;&nbsp;&nbsp;Activate ATM Card.</label>
+                    </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" value="" id="check1">
+                        <input class="form-check-input" type="checkbox" name="net_banking" value="1" id="check4">
+                        <label class="form-check-label" for="check4">&nbsp;&nbsp;&nbsp;&nbsp;Activate Net Banking.</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="1" id="check1">
                         <label class="form-check-label" for="check1">&nbsp;&nbsp;&nbsp;&nbsp;Accept all term & condition.</label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" value="" id="check2">
+                        <input class="form-check-input" type="checkbox" value="1" id="check2">
                         <label class="form-check-label" for="check2">&nbsp;&nbsp;&nbsp;&nbsp;All details are coorectly filled</label>
                     </div>
                     <div class="modal-footer">
