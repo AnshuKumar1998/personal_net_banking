@@ -2,7 +2,7 @@ from django.contrib import admin
 # Register your models here.
 from .models import Contact_us, Account_holders, Account_Details, User_Inbox, MonthlyProfit, UserLoanDetails, \
     UserTransactionDetails, BankWallet, FixDepositeList, FixDepositeUsers, Post, AdminMessage,Complaint,CustomerListAccountModel, ATMCardModel,ActionCenterModel, \
-TransactionSetByOtp
+TransactionSetByOtp,LoginActivity
 from django.contrib import messages
 
 
@@ -86,3 +86,9 @@ class AdminMessageAdmin(admin.ModelAdmin):
         queryset.update(is_active=False)
 
     make_inactive.short_description = "Deactivate selected messages"
+
+@admin.register(LoginActivity)
+class LoginActivityAdmin(admin.ModelAdmin):
+    list_display = ('username', 'ip_address', 'device_type', 'browser', 'country', 'city', 'success', 'created_at')
+    list_filter = ('success', 'device_type', 'country')
+    search_fields = ('username', 'ip_address', 'user_agent')

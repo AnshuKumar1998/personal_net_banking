@@ -1,12 +1,37 @@
-document.addEventListener('DOMContentLoaded', (event) => {
+document.addEventListener('DOMContentLoaded', () => {
+    const ctxEl = document.getElementById('profitChart');
+
+    if (!ctxEl) {
+        console.warn('profitChart canvas not found, chart will not render');
+        return;
+    }
+
+    // Set canvas height manually
+    ctxEl.height = 300; // adjust as needed
+
+    // Show loader
+    if (typeof dvloader === 'function') dvloader('show');
+
     fetch('/api/profit-data/')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
         .then(data => {
+            if (!data || !Array.isArray(data) || data.length === 0) {
+                console.warn('No profit data available');
+                alert('No profit data available to display.');
+                return;
+            }
+
             const months = data.map(item => item.month);
             const profits = data.map(item => item.profit);
 
-            const ctx = document.getElementById('profitChart').getContext('2d');
-            const profitChart = new Chart(ctx, {
+            const ctx = ctxEl.getContext('2d');
+
+            if (ctxEl.chartInstance) ctxEl.chartInstance.destroy();
+
+            ctxEl.chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: months,
@@ -14,9 +39,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
                         label: 'Profit',
                         data: profits,
                         borderColor: 'rgba(75, 192, 192, 1)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)', // Line fill color
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
                         borderWidth: 2,
-                        fill: true, // Fill the area under the line
+                        fill: true,
                         pointBackgroundColor: 'rgba(75, 192, 192, 1)',
                         pointBorderColor: '#fff',
                         pointHoverBackgroundColor: '#fff',
@@ -24,41 +49,29 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     }]
                 },
                 options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
                     scales: {
                         y: {
                             beginAtZero: true,
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
                             ticks: {
-                                callback: function(value) {
-                                    return '₹ ' + value;
-                                },
-                                color: '#ecf0f1'
-                            }
+                                callback: value => '₹ ' + value,
+                                color: '#fff' // white text
+                            },
+                            grid: { color: 'rgba(255,255,255,0.2)' }
                         },
                         x: {
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            ticks: {
-                                color: '#ecf0f1'
-                            }
+                            ticks: { color: '#fff' }, // white text
+                            grid: { color: 'rgba(255,255,255,0.2)' }
                         }
                     },
                     plugins: {
-                        legend: {
-                            labels: {
-                                color: '#ecf0f1'
-                            }
-                        },
+                        legend: { labels: { color: '#fff' } }, // white legend
                         tooltip: {
                             callbacks: {
-                                label: function(context) {
+                                label: context => {
                                     let label = context.dataset.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
+                                    if (label) label += ': ';
                                     label += '₹ ' + context.parsed.y;
                                     return label;
                                 }
@@ -66,12 +79,16 @@ document.addEventListener('DOMContentLoaded', (event) => {
                         }
                     },
                     elements: {
-                        point: {
-                            radius: 5,
-                            hoverRadius: 7
-                        }
+                        point: { radius: 5, hoverRadius: 7 }
                     }
                 }
             });
+        })
+        .catch(error => {
+            console.error('Error fetching profit data:', error);
+            alert('Unable to load profit chart data.');
+        })
+        .finally(() => {
+            if (typeof dvloader === 'function') dvloader('hide');
         });
 });

@@ -61,6 +61,7 @@
     </div>
 
     <!-- Customer Account Table -->
+    {% if customer_accounts %}
     <table class="table mt-4">
         <thead>
             <tr>
@@ -81,6 +82,13 @@
             {% endfor %}
         </tbody>
     </table>
+{% else %}
+    <div class="alert alert-warning text-start mt-3">
+        <i class="fa fa-info-circle"></i>
+        <span class="ml-2">No customer added yet.</span>
+    </div>
+{% endif %}
+
 </div>
 <br>
 <script src="{% static 'js/customer_account.js' %}"></script>

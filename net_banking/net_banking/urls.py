@@ -153,6 +153,7 @@ urlpatterns = [
     path('send_mail/', views.send_mail_view, name='send_mail'),
     path('get_account_email/', views.get_account_email, name='get_account_email'),
     path('user_profile/', views.user_profile, name='user_profile'),
+    path('login_activity/', views.login_activity, name='login_activity'),
 
     #------------ Add Customer URL --------------------------------------------------------
     path('account_list/', views.customer_account_list, name='account_list'),
@@ -181,6 +182,7 @@ urlpatterns = [
     path('social-auth/', include('social_django.urls', namespace='social')),
     path('google/callback/', views.google_login_callback, name='google_callback'),
     path('google-login-callback/', views.google_login_callback, name='google_login_callback'),
+    path('force_logout/', views.force_logout, name='force_logout'),
 
 
 ]+ static(settings.MEDIA_URL,document_root = settings.MEDIA_ROOT)

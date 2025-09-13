@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
+
     const header = document.getElementById('action-header');
     const content = document.getElementById('content');
     const modal = new bootstrap.Modal(document.getElementById('actionModal'));
@@ -17,30 +18,51 @@ document.addEventListener('DOMContentLoaded', function() {
                     modalTitle.textContent = data.subject;
                     modalBody.textContent = data.content;
                     modal.show();
+                    setTimeout(() => {
+                        dvloader('hide');
+                    }, 400);
                 })
                 .catch(error => console.error('Error fetching action details:', error));
         });
     });
 
-    document.getElementById('new-action-link').addEventListener('click', function() {
-        header.innerText = 'Action Center';
-        filterActions('new');
-    });
 
-    document.getElementById('pending-action-link').addEventListener('click', function() {
-        header.innerText = 'Pending Action';
-        filterActions('pending');
-    });
+    const newActionLink = document.getElementById('new-action-link');
+    if(newActionLink){
+        newActionLink.addEventListener('click', function() {
+            header.innerText = 'Action Center';
+            filterActions('new');
+        });
+    }
 
-    document.getElementById('completed-action-link').addEventListener('click', function() {
-        header.innerText = 'Completed Action';
-        filterActions('completed');
-    });
 
-    document.getElementById('block-action-link').addEventListener('click', function() {
-        header.innerText = 'Block Action';
-        filterActions('blocked');
-    });
+    const pendingActionLink = document.getElementById('pending-action-link');
+    if(pendingActionLink){
+        pendingActionLink.addEventListener('click', function() {
+            header.innerText = 'Pending Action';
+            filterActions('pending');
+        });
+    }
+
+
+    const completedActionLink = document.getElementById('completed-action-link');
+    if(completedActionLink){
+         completedActionLink.addEventListener('click', function() {
+            header.innerText = 'Completed Action';
+            filterActions('completed');
+        });
+    }
+
+
+    const blockActionLink = document.getElementById('block-action-link');
+    if(blockActionLink){
+        blockActionLink.addEventListener('click', function() {
+            header.innerText = 'Block Action';
+            filterActions('blocked');
+        });
+    }
+
+
 
     function filterActions(status) {
         document.querySelectorAll('.action-item').forEach(item => {
@@ -51,6 +73,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+
 });
 
 

@@ -80,35 +80,41 @@
     <div class="container">
         <h2 class="heading mb-sm-5 mb-4">Recent <strong> Complaints </strong></h2>
         <div class="accordion" id="accordionExample">
-            {% for complaint in recent_complaints %}
-            <div class="card highlight">
-                <div class="card-header" id="heading{{ forloop.counter }}">
-                    <h2 class="mb-0 d-flex justify-content-between align-items-center">
-                        <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapse{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse{{ forloop.counter }}" style="background-color: #f0ad4e; color: white;">
-                            # {{ complaint.complaint_id }} - {{ complaint.name }}
-                        </button>
-                        <form method="post" action="{% url 'delete_complaint' complaint.id %}">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-danger">Delete</button>
-                        </form>
-                    </h2>
-                </div>
-                <div id="collapse{{ forloop.counter }}" class="collapse" aria-labelledby="heading{{ forloop.counter }}" data-parent="#accordionExample">
-                    <div class="card-body">
-                        {{ complaint.message }}
-                        {% if complaint.file %}
-                        <p>Attached File: <a href="{{ complaint.file.url }}" target="_blank">Download</a></p>
+            {% if recent_complaints %}
+                {% for complaint in recent_complaints %}
+                <div class="card highlight">
+                    <div class="card-header" id="heading{{ forloop.counter }}">
+                        <h2 class="mb-0 d-flex justify-content-between align-items-center">
+                            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapse{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse{{ forloop.counter }}" style="background-color: #f0ad4e; color: white;">
+                                # {{ complaint.complaint_id }} - {{ complaint.name }}
+                            </button>
+                            <form method="post" action="{% url 'delete_complaint' complaint.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">Delete</button>
+                            </form>
+                        </h2>
+                    </div>
+                    <div id="collapse{{ forloop.counter }}" class="collapse" aria-labelledby="heading{{ forloop.counter }}" data-parent="#accordionExample">
+                        <div class="card-body">
+                            {{ complaint.message }}
+                            {% if complaint.file %}
+                            <p>Attached File: <a href="{{ complaint.file.url }}" target="_blank">Download</a></p>
+                            {% endif %}
+                        </div>
+                        {% if complaint.reply %}
+                        <div class="card-body">
+                            <p>Reply:</p>
+                            {{ complaint.reply }}
+                        </div>
                         {% endif %}
                     </div>
-                    {% if complaint.reply %}
-                    <div class="card-body">
-                        <p>Reply:</p>
-                        {{ complaint.reply }}
-                    </div>
-                    {% endif %}
                 </div>
-            </div>
-            {% endfor %}
+                {% endfor %}
+            {% else %}
+             <div class="alert alert-info text-center mt-3">
+                <i class="fa fa-exclamation-circle"></i> No complaints found.
+             </div>
+            {% endif %}
         </div>
     </div>
 </section>

@@ -1,9 +1,12 @@
 // Event listener for Transfer Now button
-    document.getElementById('transferButton').addEventListener('click', function() {
+const transferBtn = document.getElementById('transferButton');
+if (transferBtn) {
+    transferBtn.addEventListener('click', function() {
         var account = document.getElementById('accountInput').value;
         var amount = parseFloat(document.getElementById('transferAmount').value);
 
         // Perform AJAX request to transfer money
+        dvloader('show');
         fetch('/transfer_money/', {
             method: 'POST',
             headers: {
@@ -23,22 +26,29 @@
         })
         .then(data => {
             // Handle server response
-            if (data.message === 'Money transferred successfully.') {
-                showModal('Transfer Result', `<p>${data.message}</p>`);
+            showModal('Transfer Result', `<p>${data.message}</p>`);
+            if (data.current_amount) {
                 document.getElementById('currentAmount').textContent = data.current_amount;
-            } else {
-                showModal('Transfer Result', `<p>${data.message}</p>`);
             }
+            setTimeout(() => {
+                dvloader('hide');
+            }, 400);
         })
         .catch(error => {
             console.error('Error during fetch operation:', error);
-            showModal('Error', '<p>An error occurred while processing your request.</p>');
+            setTimeout(() => {
+                dvloader('hide');
+                showModal('Error', '<p>An error occurred while processing your request.</p>');
+            }, 200);
         });
     });
+}
 
-    // Prevent default form submission for transferForm
-    document.getElementById('transferForm').addEventListener('submit', function(e) {
+// Prevent default form submission for transferForm
+const transferFormConst = document.getElementById('transferForm');
+if (transferFormConst) {
+    transferFormConst.addEventListener('submit', function(e) {
         e.preventDefault();
-        // Add your form submission logic here if needed
+        // Custom logic if needed
     });
-});
+}

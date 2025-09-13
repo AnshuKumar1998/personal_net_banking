@@ -65,6 +65,11 @@
                                     <p class="expire-date new">Expire Date: {{ action.expire_date }}</p>
                                 </div>
                             {% endif %}
+                            {% empty %}
+                            <div class="alert alert-warning text-start mt-3">
+                                <i class="fa fa-info-circle"></i> <span class="ms-2">No need any action</span>
+                            </div>
+
                         {% endfor %}
                     </div>
 
@@ -79,6 +84,10 @@
                                     <p class="expire-date pending">Expire Date: {{ action.expire_date }}</p>
                                 </div>
                             {% endif %}
+                            {% empty %}
+                            <div class="alert alert-warning text-start mt-3">
+                                <i class="fa fa-check-circle"></i> <span class="ms-2">No pending any action</span>
+                            </div>
                         {% endfor %}
                     </div>
 
@@ -93,6 +102,10 @@
                                     <p class="expire-date completed">Expire Date: {{ action.expire_date }}</p>
                                 </div>
                             {% endif %}
+                            {% empty %}
+                            <div class="alert alert-warning text-start mt-3">
+                                <i class="fa fa-check-circle"></i> <span class="ms-2">Completed All Action</span>
+                            </div>
                         {% endfor %}
                     </div>
 
@@ -107,6 +120,10 @@
                                     <p class="expire-date incompleted">Expire Date: {{ action.expire_date }}</p>
                                 </div>
                             {% endif %}
+                            {% empty %}
+                            <div class="alert alert-warning text-start mt-3">
+                                <i class="fa fa-info-circle"></i> <span class="ms-2">No any incomplete action here.</span>
+                            </div>
                         {% endfor %}
                     </div>
                 </div>

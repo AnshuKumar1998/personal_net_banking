@@ -68,7 +68,7 @@
     <span id="is_authenticated" style="display: none;">{{ user.is_authenticated|json_script:"is_authenticated" }}</span>
 
     <!-- Payment Options -->
-    {% if user.is_authenticated %}
+    {% if user.is_authenticated and user_account == "Active" %}
 <form method="post" action="{% url 'fix_deposite_process_payment' %}" id="paymentForm">
     {% csrf_token %}
     <div class="mt-4">

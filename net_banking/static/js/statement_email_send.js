@@ -1,30 +1,39 @@
-// js/statement_email_send.js
-
 document.addEventListener('DOMContentLoaded', function() {
+    // DOM elements
     const sendMailButton = document.querySelector('#sendMailButton');
     const emailInput = document.querySelector('#emailInput');
     const mailModal = document.querySelector('#mailModal');
     const successModal = document.querySelector('#successModal');
-
-    sendMailButton.addEventListener('click', function() {
-        // Fetch email from Django backend using an AJAX call
-        fetch('/get_account_email/')
-            .then(response => response.json())
-            .then(data => {
-                emailInput.value = data.email;
-                // Show the modal or popup
-                // Example using Bootstrap modal
-                $(mailModal).modal('show');
-            })
-            .catch(error => console.error('Error fetching email:', error));
-    });
-
-    // Handle form submission for sending email
     const sendMailForm = document.querySelector('#sendMailForm');
-    sendMailForm.addEventListener('submit', function(event) {
-        event.preventDefault();
-        const email = emailInput.value.trim();
-        if (email) {
+
+    // Ensure all required elements exist
+    if (sendMailButton && emailInput && mailModal && sendMailForm) {
+
+        // Fetch user email and show modal
+        const sendMailButton = document.querySelector('#sendMailButton');
+        if (sendMailButton) {
+             sendMailButton.addEventListener('click', function() {
+             fetch('/get_account_email/')
+                .then(response => response.json())
+                .then(data => {
+                    emailInput.value = data.email || '';
+                    $(mailModal).modal('show'); // Bootstrap modal
+                })
+                .catch(error => console.error('Error fetching email:', error));
+             });
+
+        }
+
+
+        // Handle email form submission
+
+        sendMailForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const email = emailInput.value.trim();
+            if (!email) return;
+
+            if (typeof dvloader === 'function') dvloader('show');
+
             fetch('/send_mail/', {
                 method: 'POST',
                 headers: {
@@ -33,32 +42,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 body: JSON.stringify({ email: email })
             })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                } else {
-                    throw new Error('Failed to send email');
-                }
-            })
+            .then(response => response.ok ? response.json() : Promise.reject('Failed to send email'))
             .then(data => {
                 console.log('Mail sent:', data);
-                // Show success message or handle as needed
                 $(mailModal).modal('hide');
                 $(successModal).modal('show');
             })
-            .catch(error => console.error('Error sending email:', error));
-        }
-    });
+            .catch(error => console.error('Error sending email:', error))
+            .finally(() => {
+                if (typeof dvloader === 'function') dvloader('hide');
+            });
+        });
+    }
 
-    // Function to get CSRF token
+    // Helper function to get CSRF token
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
             const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                // Does this cookie string begin with the name we want?
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + '=')) {
                     cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                     break;
                 }

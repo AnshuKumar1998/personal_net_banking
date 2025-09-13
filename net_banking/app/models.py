@@ -1,12 +1,10 @@
+from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 import uuid
 from django.utils import timezone
-
-
-
 
 # Create your models here.
 
@@ -335,6 +333,37 @@ class TransactionSetByOtp(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.atm_card_number} - {self.amount} - {self.transaction_status}"
+
+
+class LoginActivity(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='login_activities'
+    )
+    username = models.CharField(max_length=150, blank=True)   # store attempted username as well
+    ip_address = models.CharField(max_length=45)  # IPv6 safe
+    device_type = models.CharField(max_length=50, blank=True)  # Mobile / Tablet / PC / Bot / Unknown
+    browser = models.CharField(max_length=100, blank=True)
+    os = models.CharField(max_length=100, blank=True)
+    user_agent = models.TextField(blank=True)
+    country = models.CharField(max_length=100, blank=True)
+    region = models.CharField(max_length=100, blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    success = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    logout_time = models.DateTimeField(blank=True, null=True)
+    is_active_session = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ('-created_at',)
+
+    def __str__(self):
+        return f"{self.username or self.user_id} - {self.ip_address} - {'OK' if self.success else 'FAILED'}"
 
 
 

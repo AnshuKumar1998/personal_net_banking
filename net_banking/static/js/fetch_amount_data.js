@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
+
     var plusButton = document.getElementById('plusButton');
     var refreshButton = document.getElementById('refreshButton');
     var currentAmount = document.getElementById('currentAmount');
@@ -15,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
         event.preventDefault();
 
         var amount = document.getElementById('amount').value;
-
+        dvloader('show');
         fetch('/update_amount/', {
             method: 'POST',
             headers: {
@@ -29,7 +30,13 @@ document.addEventListener('DOMContentLoaded', function () {
             if (data.success) {
                 currentAmount.textContent = data.new_amount;
                 amountModal.hide();
+                setTimeout(() => {
+                    dvloader('hide');
+                }, 400);
             } else {
+                setTimeout(() => {
+                    dvloader('hide');
+                }, 400);
                 alert('Error updating amount.');
             }
         })
@@ -38,13 +45,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Handle refresh button click to update current amount
     refreshButton.addEventListener('click', function () {
+        dvloader('show');
         fetch('/get_current_amount/')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 currentAmount.textContent = data.current_amount;
+                setTimeout(() => {
+                    dvloader('hide');
+                }, 400);
             } else {
                 alert('Error fetching current amount.');
+                setTimeout(() => {
+                    dvloader('hide');
+                }, 400);
             }
         })
         .catch(error => console.error('Error:', error));

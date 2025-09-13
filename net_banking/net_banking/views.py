@@ -3,6 +3,7 @@ import os
 import shutil
 import uuid
 import json
+from django.contrib.sessions.models import Session
 from django.http import HttpResponseNotFound
 from django.conf import settings
 from django.contrib.sites import requests
@@ -16,7 +17,7 @@ from django.contrib.auth.hashers import make_password
 from django.db import transaction
 from django.db.models import F, ExpressionWrapper, FloatField, Q
 from django.http import JsonResponse, HttpResponse
-from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit,UserLoanDetails,UserTransactionDetails,BankWallet,FixDepositeList,FixDepositeUsers,Post,AdminMessage,Complaint,CustomerListAccountModel, ATMCardModel,ActionCenterModel,TransactionSetByOtp
+from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,MonthlyProfit,UserLoanDetails,UserTransactionDetails,BankWallet,FixDepositeList,FixDepositeUsers,Post,AdminMessage,Complaint,CustomerListAccountModel, ATMCardModel,ActionCenterModel,TransactionSetByOtp,LoginActivity
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
@@ -40,13 +41,101 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from django.conf import settings
 from social_django.models import UserSocialAuth
+from user_agents import parse as ua_parse
 
 
 logger = logging.getLogger(__name__)
 
 
 
+# 1) Get client IP
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0].strip()
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip or ''
 
+
+# 2) Parse user agent
+def parse_user_agent(request):
+    ua_string = request.META.get('HTTP_USER_AGENT', '')
+    ua = ua_parse(ua_string)
+    if ua.is_bot:
+        device_type = 'Bot'
+    elif ua.is_mobile:
+        device_type = 'Mobile'
+    elif ua.is_tablet:
+        device_type = 'Tablet'
+    elif ua.is_pc:
+        device_type = 'PC'
+    else:
+        device_type = 'Unknown'
+
+    browser = f"{ua.browser.family} {ua.browser.version_string}" if ua.browser else ''
+    os = f"{ua.os.family} {ua.os.version_string}" if ua.os else ''
+
+    return {
+        'device_type': device_type,
+        'browser': browser,
+        'os': os,
+        'user_agent': ua_string
+    }
+
+
+# 3) Geolocate IP
+def geolocate_ip(ip):
+    country = region = city = ''
+    latitude = longitude = None
+    try:
+        resp = requests.get(f'https://ipapi.co/{ip}/json/', timeout=2)
+        if resp.status_code == 200:
+            geo = resp.json()
+            country = geo.get('country_name', '')
+            region = geo.get('region', '')
+            city = geo.get('city', '')
+            latitude = geo.get('latitude')
+            longitude = geo.get('longitude')
+    except Exception:
+        pass
+    return {
+        'country': country,
+        'region': region,
+        'city': city,
+        'latitude': latitude,
+        'longitude': longitude
+    }
+
+
+# 4) Record login activity
+def record_login_activity(user, username, request, success):
+    ip = get_client_ip(request)
+    ua_info = parse_user_agent(request)
+    geo_info = geolocate_ip(ip)
+
+    LoginActivity.objects.create(
+        user=user,
+        username=username,
+        ip_address=ip,
+        device_type=ua_info['device_type'],
+        browser=ua_info['browser'],
+        os=ua_info['os'],
+        user_agent=ua_info['user_agent'],
+        country=geo_info['country'],
+        region=geo_info['region'],
+        city=geo_info['city'],
+        latitude=geo_info['latitude'],
+        longitude=geo_info['longitude'],
+        success=success
+    )
+
+def update_logout_activity(user):
+    # Mark all active sessions as logged out
+    LoginActivity.objects.filter(user=user, success=True, logout_time__isnull=True).update(
+        logout_time=timezone.now(),
+        is_active_session=False
+    )
 #---------------------Website Page-----------------------
 def master(request):
     return render(request,'master.html')
@@ -107,8 +196,13 @@ def login(request):
 
         if user is not None:
             auth_login(request, user)
+            # login view
+            request.session['ip_address'] = get_client_ip(request)  # ek helper function se IP nikal lo
+
+            record_login_activity(user, username, request, success=True)
             return redirect('user_account')
         else:
+            record_login_activity(None, username, request, success=False)
             messages.error(request, 'Invalid username or password.')
             return render(request, 'users_dir/login.html')
 
@@ -232,7 +326,10 @@ def user_account(request):
 
 
 def logout(request):
-
+    LoginActivity.objects.filter(user=request.user, is_active_session=True).update(
+        logout_time=timezone.now(),
+        is_active_session=False
+    )
     profile = Account_holders.objects.get(user=request.user)
     delete_login_data_folder(profile.username)
     auth_logout(request)
@@ -1004,10 +1101,12 @@ def fix_deposite_details(request, fix_deposite_id):
         name = profile.name
         email = profile.email
         mobile = profile.mobile
+        account_status = profile.account_status
     else:
         name = None
         email = None
         mobile = None
+        account_status = None
 
     per_month = fix_deposit.fix_deposite_maximum_amt / fix_deposit.fix_deposite_month
     mataruity_amt = fix_deposit.fix_deposite_maximum_amt * fix_deposit.fix_deposite_rate_of_intrest * fix_deposit.fix_deposite_month
@@ -1016,6 +1115,7 @@ def fix_deposite_details(request, fix_deposite_id):
         'name': name,
         'email': email,
         'mobile': mobile,
+        "user_account": account_status,
         'deposite_id': fix_deposit.fix_deposite_id,
         'deposite_name': fix_deposit.fix_deposite_name,
         'deposite_amount': fix_deposit.fix_deposite_maximum_amt,
@@ -1447,6 +1547,7 @@ def user_profile(request):
 def action_center(request):
     profile_holder = get_object_or_404(Account_holders, user=request.user)
     actions = ActionCenterModel.objects.filter(username=profile_holder.username)
+
     context ={
         'name':profile_holder.name,
         'actions': actions
@@ -1789,3 +1890,38 @@ def google_login_callback(request):
 
     logout_gmail(request)
     return redirect(redirect_url)
+
+
+@login_required
+def login_activity(request):
+    # Pehle currently active session top pe
+    login_activities = LoginActivity.objects.filter(
+        Q(user=request.user) | Q(username=request.user.username)
+    ).order_by('-is_active_session', '-created_at')[:10]   # LIMIT 10
+
+    context = {
+        'login_activities': login_activities,
+        'name': request.user.get_full_name() or request.user.username
+    }
+    return render(request, 'user_setting_dir/login_activity_history.html', context)
+
+
+
+@csrf_exempt
+def force_logout(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        user_id = str(data.get("user_id"))
+        ip_address = data.get("ip_address")
+        count = 0
+
+        sessions = Session.objects.all()
+        for session in sessions:
+            session_data = session.get_decoded()
+            if session_data.get('_auth_user_id') == user_id and session_data.get('ip_address') == ip_address:
+                session.delete()
+                count += 1
+
+        return JsonResponse({"status": "ok", "message": f"{count} session(s) logged out for IP {ip_address}"})
+
+    return JsonResponse({"status": "error"}, status=400)

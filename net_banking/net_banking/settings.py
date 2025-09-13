@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 import os
 from pathlib import Path
+from decouple import config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,15 +21,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ft6fs7-b*6ef-!nb*)8*mcd-$!z(&#+3!ocqor8e^*^8*d(^fb'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
-ALLOWED_HOSTS = []
-
-
-
 
 # Application definition
 
@@ -41,7 +37,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'app.apps.AppConfig',
     'social_django',
-    'storages',
 ]
 
 MIDDLEWARE = [
@@ -83,11 +78,11 @@ WSGI_APPLICATION = 'net_banking.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'net_banking_db',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',  # or the hostname where your MySQL server is running
-        'PORT': '3306',      # or the port on which your MySQL server is listening
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST'),
+        'PORT': config('DB_PORT'),
     }
 }
 
@@ -143,7 +138,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'anshukr5691@gmail.com'
-EMAIL_HOST_PASSWORD = 'wwpfrmfgtbskyina'
+EMAIL_HOST_PASSWORD = 'bzmczembreykaytq'
 DEFAULT_FROM_EMAIL = 'anshukr5691@gmail.com'
 
 
@@ -202,20 +197,17 @@ SOCIAL_AUTH_PIPELINE = (
 
 
 SOCIAL_AUTH_LOGIN_ERROR_URL = '/login-error/'
+#ngrok allow links--------------------------------->
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+    "1c80cba1bf1f.ngrok-free.app",
+]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://1c80cba1bf1f.ngrok-free.app",
+]
 
-# AWS S3 settings
-AWS_ACCESS_KEY_ID = 'AKIA4MTWIRAMSXRFZ2WL'
-AWS_SECRET_ACCESS_KEY = 'kiAZZSJDpm1u07FMai5eogp/b14ZwThscRbp9Pwd'
-AWS_STORAGE_BUCKET_NAME = 'testbucketawss'
-AWS_S3_REGION_NAME = 'ap-south-1'  # e.g., 'us-east-1'
-AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
-# Static files (CSS, JavaScript, images)
-STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
-
-# Media files (User-uploaded content)
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
-
+#End ngrok allow links--------------------------------->

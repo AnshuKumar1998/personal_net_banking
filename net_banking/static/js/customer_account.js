@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     verifyBtn.addEventListener('click', function() {
         var accountNo = document.getElementById('account_no').value;
-
+        dvloader('show');
         // Perform AJAX request to verify account number
         fetch('/verify_account/', {
             method: 'POST',
@@ -30,6 +30,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('mobileNo').innerText = data.mobile_no;
                 document.getElementById('emailId').innerText = data.email_id;
                 accountDetails.style.display = 'block';
+                 setTimeout(() => {
+                    dvloader('hide');
+                }, 500);
             } else {
                 alert('Account number not found.');
             }
@@ -37,6 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     addCustomerConfirmBtn.addEventListener('click', function() {
+        dvloader('show');
         // Perform AJAX request to add customer account
         fetch('/add_customer/', {
             method: 'POST',
@@ -53,9 +57,16 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
+
             if (data.success) {
+                setTimeout(() => {
+                        dvloader('hide');
+                }, 400);
                 location.reload(); // Reload the page to see the new customer account
             } else {
+                setTimeout(() => {
+                    dvloader('hide');
+                }, 200);
                 alert('Failed to add customer.');
             }
         });

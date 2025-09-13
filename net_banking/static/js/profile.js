@@ -4,6 +4,7 @@ function selectProfileImage() {
 
 $(document).ready(function() {
     $('#profileUpload').change(function() {
+        dvloader('show');
         var file = this.files[0];
         var formData = new FormData();
         formData.append('photo', file);
@@ -23,9 +24,15 @@ $(document).ready(function() {
             contentType: false,
             success: function(response) {
                 $('#profileImage').attr('src', response.photo);  // Update image source on success
+                setTimeout(() => {
+                    dvloader('hide');
+                }, 400);
             },
             error: function(xhr, status, error) {
                 console.error(xhr.responseText);
+                setTimeout(() => {
+                    dvloader('hide');
+                }, 400);
             }
         });
     });

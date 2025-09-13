@@ -1,0 +1,111 @@
+{% extends 'master.html' %}
+{% load static %}
+{% block body %}
+<section class="inner-banner" id="home">
+    <div class="inner-layer">
+        <div class="container"></div>
+    </div>
+</section>
+
+<div class="breadcrumb-w3pvt">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+                <li class="breadcrumb-item">Hi, {{ name }}</li>
+                <li class="breadcrumb-item active" aria-current="page">Login Activity</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="container mt-5">
+    <h1 class="mb-4">User Login Activity</h1>
+
+    {% if login_activities %}
+    <table class="table table-hover shadow-sm rounded">
+        <thead class="thead-dark">
+            <tr>
+                <th>#</th>
+                <th>Username</th>
+                <th>Device</th>
+                <th>Browser</th>
+                <th>IP Address</th>
+                <th>Country</th>
+                <th>City</th>
+                <th>Login Time</th>
+                <th>Login Status</th>
+                <th>Logout Status</th>
+                <th>Currently Active</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for activity in login_activities %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ activity.user.username|default:"UNKNOWN" }}</td>
+                <td>{{ activity.device_type }}</td>
+                <td>{{ activity.browser }}</td>
+                <td>{{ activity.ip_address }}</td>
+                <td>{{ activity.country }}</td>
+                <td>{{ activity.city }}</td>
+                <td>{{ activity.created_at|date:"M d, Y H:i" }}</td>
+
+                <!-- Login Status -->
+                <td>
+                    {% if activity.success %}
+                        <span class="badge badge-success">Success</span>
+                    {% else %}
+                        <span class="badge badge-danger">Failed</span>
+                    {% endif %}
+                </td>
+
+                <!-- Logout Status -->
+               <td>
+                    {% if activity.user.username|default:'' %}
+                        {% if activity.logout_time %}
+                            <span class="badge badge-secondary">Logged Out</span>
+                        {% else %}
+                            <span class="badge badge-warning">Not Logged Out</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge badge-warning">------</span>
+                    {% endif %}
+               </td>
+
+
+                <!-- Currently Active -->
+                <td>
+                    {% if activity.is_active_session %}
+                        <span class="badge badge-primary">Yes</span>
+                    {% else %}
+                        <span class="badge badge-light">No</span>
+                    {% endif %}
+                </td>
+
+                <!-- Action Buttons -->
+                <td>
+                    <div class="btn-group">
+                        <button class="btn btn-danger btn-sm block-ip-btn mr-2" data-ip="{{ activity.ip_address }}">Block IP</button>
+                        {% if not activity.logout_time %}
+                            <button class="btn btn-warning btn-sm logout-btn mr-2" data-ip="{{ activity.ip_address }}" data-user="{{ activity.user.id }}">Logout</button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% else %}
+    <div class="alert alert-info text-start mt-3">
+        <i class="fa fa-info-circle"></i>
+        <span class="ml-2">No login activity found yet.</span>
+    </div>
+    {% endif %}
+</div>
+
+<script src="{% static 'js/login_activity.js' %}"></script>
+<script src="{% static 'js/loginActivity_logout.js' %}"></script>
+{% endblock %}

@@ -4,6 +4,7 @@ $(document).ready(function() {
     $('#addAmountForm').submit(function(e) {
         e.preventDefault();
         var amount = $('#amount').val();
+        dvloader('show');
 
         // AJAX request to update amount
         $.ajax({
@@ -21,12 +22,21 @@ $(document).ready(function() {
 
                     // Show success modal
                     $('#successModal2').modal('show');
+                    setTimeout(() => {
+                        dvloader('hide');
+                    }, 400);
                 } else {
                     alert('Failed to add money.');
+                    setTimeout(() => {
+                        dvloader('hide');
+                    }, 400);
                 }
             },
             error: function(xhr, status, error) {
                 console.error('Error:', error);
+                setTimeout(() => {
+                    dvloader('hide');
+                }, 400);
             }
         });
     });

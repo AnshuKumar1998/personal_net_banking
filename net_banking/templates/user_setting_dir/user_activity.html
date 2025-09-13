@@ -69,6 +69,13 @@
             </div>
         </div>
         {% endif %}
+        {% if not fix_deposites and not loans %}
+        <div class="col-12">
+            <div class="alert alert-info text-center mt-3">
+                <i class="fa fa-history"></i> No activity found.
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
