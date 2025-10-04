@@ -79,3 +79,30 @@ function getCookie(name) {
     }
     return cookieValue;
 }
+
+
+function openExportModal() {
+    const exportModal = new bootstrap.Modal(document.getElementById('exportModal'));
+    exportModal.show();
+}
+
+function downloadStatement(format) {
+    const params = new URLSearchParams(window.location.search);
+    params.append('format', format);
+    params.append('password', 'admin'); // default password
+
+    // Open export link in new tab
+    window.location.href = `/export-transaction-statement/?${params.toString()}`;
+}
+
+function printStatement() {
+    const printContents = document.getElementById('printableArea').innerHTML;
+    const originalContents = document.body.innerHTML;
+
+    document.body.innerHTML = printContents;
+    window.print();
+    document.body.innerHTML = originalContents;
+    location.reload();
+}
+
+

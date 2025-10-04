@@ -294,13 +294,14 @@
                     <div class="form-group d-flex">
                         <div class="flex-grow-1">
                             <label for="accountInput">Recipient Account Number or UPI ID</label>
-                            <input type="text" class="form-control" id="accountInput" name="account" required>
+                            <input type="text" class="form-control"  id="accountInput" name="account" required>
                         </div>
-                        <div class="ml-2 align-self-end">
+                        <div class="ml-3 align-self-end">
                             <button type="button" class="btn btn-secondary" id="searchButton">Search</button>
                             <button type="button" class="btn btn-warning" id="listButton">Customer List</button>
                         </div>
                     </div>
+                    <span style="display:none;" id="accountInput_error"></span>
                     <div id="userData" style="display: none;">
                         <div class="form-group">
                             <label for="userName">Recipient Name</label>
@@ -317,8 +318,9 @@
                     </div>
                     <div class="form-group">
                         <label for="transferAmount">Amount to Transfer</label>
-                        <input type="number" class="form-control" id="transferAmount" name="amount" required>
+                        <input type="number" class="form-control" id="transferAmount" name="amount" maxlength="10" step="0.01" required>
                     </div>
+                    <span style="display:none;" id="transferAmount_error"></span>
                     <button type="button" class="btn btn-primary" id="transferButton">Transfer Now</button>
                 </form>
             </div>
@@ -328,7 +330,7 @@
                 <div class="card highlight">
                     <div class="card-header" id="heading{{ forloop.counter }}">
                         <h2 class="mb-0">
-                             <button class="btn btn btn-secondary btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapse{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse{{ forloop.counter }}" style="color: white;">
+                             <button class="btn btn btn-secondary btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapse{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse{{ forloop.counter }}" style="background-color:#6c757d; color:white; border:none;">
                              # {{ loan.loan_id }}
                              </button>
                              <!-- Adjusted for spacing -->

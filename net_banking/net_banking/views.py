@@ -1,8 +1,11 @@
 import base64
 import os
 import shutil
+import io
+import pandas as pd
 import uuid
 import json
+from reportlab.lib.pagesizes import A4
 from django.contrib.sessions.models import Session
 from django.http import HttpResponseNotFound
 from django.conf import settings
@@ -21,7 +24,7 @@ from app.models import Contact_us,Account_holders,Account_Details,User_Inbox,Mon
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
-from app.help import today_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number, inbox_message,transaction_slip, create_atm_card,generate_otp,today_date_time,generate_unique_transactionByOtp_id,convert_base64_to_image,convert_image_to_base64,delete_login_data_folder,kolkata_time_to_unix_time
+from app.help import today_date, generate_unique_loan_id, calculate_due_date, generate_unique_account_number, inbox_message,transaction_slip, create_atm_card,generate_otp,today_date_time,generate_unique_transactionByOtp_id,convert_base64_to_image,convert_image_to_base64,delete_login_data_folder,kolkata_time_to_unix_time,setActionMessage,updateActionCenterStatus
 from django.contrib.auth.models import User
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -32,7 +35,8 @@ from django.views.decorators.http import require_POST, require_http_methods
 from django.db.models import Count
 from django.core.mail import EmailMessage
 from io import BytesIO
-from reportlab.lib.pagesizes import landscape, letter
+from reportlab.lib.pagesizes import landscape, letter, A4
+from reportlab.pdfgen import canvas
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib import colors
 from django.utils.dateformat import format
@@ -42,7 +46,12 @@ from googleapiclient.discovery import build
 from django.conf import settings
 from social_django.models import UserSocialAuth
 from user_agents import parse as ua_parse
-
+import io
+from django.http import HttpResponse
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import landscape, A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
 
 logger = logging.getLogger(__name__)
 
@@ -192,12 +201,24 @@ def login(request):
         username = request.POST.get('username')
         password = request.POST.get('password')
 
+        ip_address = get_client_ip(request)
+
+        blocked_activity = LoginActivity.objects.filter(
+            username=username,
+            ip_address=ip_address,
+            account_status='block'
+        ).exists()
+
+        if blocked_activity:
+            messages.error(request, f"Login blocked for IP {ip_address}. Please contact support.")
+            record_login_activity(None, username, request, success=False)
+            return render(request, 'users_dir/login.html')
+
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
             auth_login(request, user)
-            # login view
-            request.session['ip_address'] = get_client_ip(request)  # ek helper function se IP nikal lo
+            request.session['ip_address'] = ip_address
 
             record_login_activity(user, username, request, success=True)
             return redirect('user_account')
@@ -207,6 +228,7 @@ def login(request):
             return render(request, 'users_dir/login.html')
 
     return render(request, 'users_dir/login.html')
+
 
 def post_list(request):
     name="none"
@@ -457,6 +479,7 @@ def activate(request):
             create_atm_card(account_holder,account_details)
         account_holder.account_status = 'Active'  # Example: Updating account_status column
         account_holder.save()
+        updateActionCenterStatus(account_holder.username,"account_status01", "completed")
         inbox_message(account_holder,"Account Activation","Your account has been successfully activated.")
         messages.success(request, 'Account Successfully Activated')
         return redirect('user_account')
@@ -495,6 +518,7 @@ def user_setting(request):
     profile = Account_holders.objects.get(username = request.user.username)
     context = {
         'name':profile.name,
+        'user_account':profile.account_status
     }
     return render(request,'user_setting_dir/user_setting.html',context)
 
@@ -1388,10 +1412,8 @@ def delete_transactions(request):
 @login_required
 def user_transaction_statement(request):
     profile_holder = get_object_or_404(Account_holders, user=request.user)
-    transactions = UserTransactionDetails.objects.filter(username=request.user).order_by('-id')
+    transactions = UserTransactionDetails.objects.filter(username=request.user).order_by('-transaction_date')
 
-    # Filtering
-    # Filtering
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     transaction_type_filter = request.GET.get('transaction_type')
@@ -1399,28 +1421,39 @@ def user_transaction_statement(request):
     sort_order = request.GET.get('sort_order')
 
     if start_date and end_date:
-        transactions = transactions.filter(date__range=[start_date, end_date])
+        transactions = transactions.filter(transaction_date__date__range=[start_date, end_date])
+
     if transaction_type_filter:
         transactions = transactions.filter(transaction_type=transaction_type_filter)
+
     if status_filter:
-        transactions = transactions.filter(status=status_filter)
+        transactions = transactions.filter(payment_status=status_filter)
+
     if sort_order:
         transactions = transactions.order_by(sort_order)
 
+    per_page = request.GET.get('per_page', 10)
+    try:
+        per_page = int(per_page)
+    except ValueError:
+        per_page = 10
 
-    paginator = Paginator(transactions, 12)  # Show 30 transactions per page
+    paginator = Paginator(transactions, per_page)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+
     context = {
-        'name':profile_holder.name,
+        'name': profile_holder.name,
         'page_obj': page_obj,
         'start_date': start_date,
         'end_date': end_date,
         'transaction_type_filter': transaction_type_filter,
         'status_filter': status_filter,
-        'sort_order': sort_order
+        'sort_order': sort_order,
+        'per_page': per_page
     }
-    return render(request, 'users_dir/user_transaction_statement.html',context)
+    return render(request, 'users_dir/user_transaction_statement.html', context)
+
 
 @login_required
 def delete_transaction(request, id):
@@ -1546,13 +1579,62 @@ def user_profile(request):
 
 def action_center(request):
     profile_holder = get_object_or_404(Account_holders, user=request.user)
+    date_obj = timezone.now()
+    expire_date = None
+
+    # Check 1: Photo
+    if not profile_holder.photo and not ActionCenterModel.objects.filter(
+        username=profile_holder.username, subject_code="photo01"
+    ).exists():
+        setActionMessage(
+            profile_holder,
+            expire_date,
+            date_obj,
+            "Set Photo",
+            "You can set photo in your profile for unlock new Future",
+            "new",
+            "Upload your photo today and unlock new features, personalization, and better experience.",
+            "photo01"
+        )
+
+    # Check 2: Profile Photo
+    if not profile_holder.profile_photo and not ActionCenterModel.objects.filter(
+        username=profile_holder.username, subject_code="profile_photo01"
+    ).exists():
+        setActionMessage(
+            profile_holder,
+            expire_date,
+            date_obj,
+            "Set Profile Photo",
+            "Profile photo is required for better identification.",
+            "new",
+            "Please upload your profile photo to complete verification and access full features.",
+            "profile_photo01"
+        )
+
+    # Check 3: Account Status
+    if profile_holder.account_status.lower() != "active" and not ActionCenterModel.objects.filter(
+        username=profile_holder.username, subject_code="account_status01"
+    ).exists():
+        setActionMessage(
+            profile_holder,
+            expire_date,
+            date_obj,
+            "Account Status",
+            "Activate your account to start using all banking services.",
+            "new",
+            "By activating your account, you will unlock many features like sending & receiving money, viewing statements, ATM card, and full net banking services.",
+            "account_status01"
+        )
+
     actions = ActionCenterModel.objects.filter(username=profile_holder.username)
 
-    context ={
-        'name':profile_holder.name,
+    context = {
+        'name': profile_holder.name,
         'actions': actions
     }
-    return render(request, 'users_dir/action_center.html',context)
+    return render(request, 'users_dir/action_center.html', context)
+
 
 def action_detail(request, id):
     action = ActionCenterModel.objects.get(id=id)
@@ -1896,7 +1978,7 @@ def google_login_callback(request):
 def login_activity(request):
     # Pehle currently active session top pe
     login_activities = LoginActivity.objects.filter(
-        Q(user=request.user) | Q(username=request.user.username)
+        Q(user=request.user) | Q(username=request.user.username) & ~Q(account_status="block")
     ).order_by('-is_active_session', '-created_at')[:10]   # LIMIT 10
 
     context = {
@@ -1925,3 +2007,200 @@ def force_logout(request):
         return JsonResponse({"status": "ok", "message": f"{count} session(s) logged out for IP {ip_address}"})
 
     return JsonResponse({"status": "error"}, status=400)
+
+def do_later_action(request, action_id):
+    if request.method == "POST":
+        action = ActionCenterModel.objects.get(id=action_id)
+        action.status = "pending"
+        action.save()
+        return JsonResponse({"success": True})
+    return JsonResponse({"success": False})
+
+
+def blockIpAddress(request, ip_address):
+    if request.method == "POST":
+        try:
+            # filter by IP and username, update all matching rows
+            updated_count = LoginActivity.objects.filter(
+                ip_address=ip_address,
+                username=request.user.username
+            ).update(account_status="block")
+
+            if updated_count > 0:
+                return JsonResponse({
+                    "success": True,
+                    "message": f"{updated_count} rows blocked for IP {ip_address}"
+                })
+            else:
+                return JsonResponse({"success": False, "message": "No matching activity found"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+
+    return JsonResponse({"success": False, "message": "Invalid request"})
+
+def blocked_list(request):
+    if request.method == "GET":
+        blocked = LoginActivity.objects.filter(
+            username=request.user.username,
+            account_status="block"
+        ).values("username", "ip_address", "device_type", "browser", "created_at")
+
+        return JsonResponse(list(blocked), safe=False)
+
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+
+@csrf_exempt
+def unblock_ip(request, ip_address):
+    if request.method == "POST":
+        updated = LoginActivity.objects.filter(
+            ip_address=ip_address,
+            username=request.user.username,
+            account_status="block"
+        ).update(account_status="unblock")
+
+        if updated > 0:
+            return JsonResponse({"success": True, "message": f"IP {ip_address} unblocked"})
+        else:
+            return JsonResponse({"success": False, "message": "No matching blocked IP found"})
+
+    return JsonResponse({"success": False, "message": "Invalid request"})
+
+
+
+def export_transaction_statement(request):
+    user = request.user
+    format = request.GET.get('format', 'pdf')
+    password = request.GET.get('password', 'admin')
+
+    # Get filters from GET
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    transaction_type_filter = request.GET.get('transaction_type')
+    status_filter = request.GET.get('status')
+    sort_order = request.GET.get('sort_order')
+
+    transactions = UserTransactionDetails.objects.filter(username=user)
+    trans = transactions
+    if start_date and end_date:
+        transactions = transactions.filter(transaction_date__date__range=[start_date, end_date])
+    if transaction_type_filter:
+        transactions = transactions.filter(transaction_type=transaction_type_filter)
+    if status_filter:
+        transactions = transactions.filter(payment_status=status_filter)
+    if sort_order:
+        transactions = transactions.order_by(sort_order)
+
+    # Convert queryset to list of dicts
+    data = transactions.values(
+        'transaction_id','transaction_date','transaction_type','section','section_no','amount','payment_method','payment_status','description'
+    )
+
+    # PDF Export
+    if format == 'pdf':
+
+
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=landscape(A4),
+                                leftMargin=30, rightMargin=30,
+                                topMargin=50, bottomMargin=50)
+        from reportlab.lib.styles import ParagraphStyle
+        elements = []
+        styles = getSampleStyleSheet()
+        normal = styles['Normal']
+        bold = ParagraphStyle(
+                            name='BoldHeader',
+                            parent=styles['Heading4'],
+                            fontSize=20,   # yaha apna desired font size
+                            leading=22,    # line height
+                            spaceAfter=10, # neeche space
+                        )
+
+        # ----------------------------
+        # 1️⃣ Bank Header
+        # ----------------------------
+        elements.append(Paragraph("🏦 MINI BANK", bold))
+        elements.append(Spacer(1, 10))
+        elements.append(Paragraph("Account Holder: Dummy", normal))
+        elements.append(Paragraph("Account Username: dummy", normal))
+        elements.append(Paragraph("Branch Code: MINI10023BANK", normal))
+        elements.append(Spacer(1, 20))
+
+        # ----------------------------
+        # 2️⃣ Table Data
+        # ----------------------------
+        headers = ['Sl. No.', 'Transaction ID', 'Date', 'Type', 'Credited By', 'Amount',
+                   'Payment Method', 'Status', 'Description']
+        table_data = [headers]
+
+        for idx, row in enumerate(data, start=1):
+            table_data.append([
+                str(idx),
+                row['transaction_id'],
+                str(row['transaction_date'].date()),
+                row['transaction_type'],
+                row.get('section', ''),
+                str(row['amount']),
+                row['payment_method'],
+                row['payment_status'],
+                row.get('description', '')
+            ])
+
+        # ----------------------------
+        # 3️⃣ Create Table with Style
+        # ----------------------------
+        col_widths = [50, 100, 70, 70, 70, 60, 80, 60, 120]
+        table = Table(table_data, colWidths=col_widths)
+        table.setStyle(TableStyle([
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('LEFTPADDING', (0, 0), (-1, -1), 2),  # <-- reduce left padding
+            ('RIGHTPADDING', (0, 0), (-1, -1), 6),  # optional
+        ]))
+
+        elements.append(table)
+
+        # ----------------------------
+        # 4️⃣ Build PDF
+        # ----------------------------
+        doc.build(elements)
+
+        buffer.seek(0)
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="statement.pdf"'
+        return response
+
+    # Convert queryset to list of dicts
+    data_list = list(data)
+
+    # Make datetime naive
+    for row in data_list:
+        if row['transaction_date']:
+            # Remove timezone info
+            row['transaction_date'] = row['transaction_date'].replace(tzinfo=None)
+
+    # Now create DataFrame
+    df = pd.DataFrame(data_list)
+    if format == 'excel':
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False, sheet_name='Statement')
+            workbook  = writer.book
+            worksheet = writer.sheets['Statement']
+            # Protect sheet with password
+            worksheet.protect(password)
+        output.seek(0)
+        response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="statement.xlsx"'
+        return response
+
+    if format == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="statement.csv"'
+        df.to_csv(path_or_buf=response, index=False)
+        return response

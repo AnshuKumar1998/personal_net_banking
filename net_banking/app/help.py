@@ -6,7 +6,7 @@ import pytz
 from dateutil.relativedelta import relativedelta
 from django.http import HttpResponse
 
-from .models import UserLoanDetails, Account_Details, User_Inbox, UserTransactionDetails,ATMCardModel,TransactionSetByOtp
+from .models import UserLoanDetails, Account_Details, User_Inbox, UserTransactionDetails,ATMCardModel,TransactionSetByOtp,ActionCenterModel
 from django.utils import timezone
 import string
 import base64
@@ -202,3 +202,41 @@ def kolkata_time_to_unix_time(date_and_time):
     # Convert to Unix timestamp
     unix_timestamp = int(date_object.timestamp())
     return unix_timestamp
+
+
+def setActionMessage(account_holder,expire_date,issue_date, subject, content, status, description, subject_code):
+    ActionCenterModel.objects.create(
+        user = account_holder,
+        username = account_holder.username,
+        name = account_holder.name,
+        email = account_holder.email,
+        subject = subject,
+        content = content,
+        status = status,
+        description = description,
+        subject_code = subject_code,
+        issue_date = issue_date if issue_date else None,
+        expire_date = expire_date if expire_date else None
+
+    )
+
+def updateActionCenterStatus(username, subject_code, status):
+    try:
+        action = ActionCenterModel.objects.get(
+            username=username,
+            subject_code=subject_code
+        )
+
+        # agar already true hai to kuch na kare
+        if action.action_status is True:
+            return False
+
+        # warna update kare
+        action.status = status
+        action.action_status = True
+        action.save()
+        return True
+
+    except ActionCenterModel.DoesNotExist:
+        return False
+

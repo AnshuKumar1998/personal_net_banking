@@ -19,8 +19,21 @@
     </div>
 </div>
 
-<div class="container mt-5">
-    <h1 class="mb-4">User Login Activity</h1>
+<div class="container mt-5 mb-4">
+  <div class="row align-items-center">
+    <div class="col-md-6">
+      <h1 class="mb-0">User Login Activity</h1>
+    </div>
+      {% if login_activities %}
+    <div class="col-md-6 text-md-right text-start mt-3 mt-md-0">
+      <button class="btn btn-dark" id="showBlockedBtn">Blocked List</button>
+    </div>
+      {% endif %}
+
+  </div>
+</div>
+
+<div class="container mt-5" id="login-activity-table">
 
     {% if login_activities %}
     <table class="table table-hover shadow-sm rounded">
@@ -97,7 +110,7 @@
             {% endfor %}
         </tbody>
     </table>
-
+</div>
     {% else %}
     <div class="alert alert-info text-start mt-3">
         <i class="fa fa-info-circle"></i>
@@ -105,7 +118,72 @@
     </div>
     {% endif %}
 </div>
+<!-------------------------Modal---------------------->
+<div id="blockIpModal" class="modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">Block IP</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" onclick="closeBlockIPModal()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+          <div id="block-list-msg" class="mb-2"></div>
+        Are you sure you want to block this IP: <strong id="ip-to-block"></strong> ?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="closeBlockIPModal()">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmBlockBtn">Yes, Block</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-------------------------End Modal---------------------->
+
+<!-- Blocked List Modal -->
+<div class="modal fade" id="blockedListModal" tabindex="-1" role="dialog" aria-labelledby="blockedListModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title" style="color:white;" id="blockedListModalLabel">Blocked IP List</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <div class="modal-body" style="max-height: 400px; overflow-y: auto; padding: 0 15px;">
+           <div id="blocked-list-msg" class="mb-2"></div>
+  <table class="table table-bordered shadow-sm rounded mb-0">
+    <thead class="thead-dark" style="position: sticky; top: 0; z-index: 10;">
+      <tr>
+        <th>#</th>
+        <th>Username</th>
+        <th>IP Address</th>
+        <th>Device</th>
+        <th>Browser</th>
+        <th>Blocked At</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="blocked-list-body">
+
+    </tbody>
+  </table>
+</div>
+
+
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <script src="{% static 'js/login_activity.js' %}"></script>
 <script src="{% static 'js/loginActivity_logout.js' %}"></script>
+
 {% endblock %}

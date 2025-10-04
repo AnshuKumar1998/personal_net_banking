@@ -287,17 +287,19 @@ class ActionCenterModel(models.Model):
         ('completed', 'Completed Action'),
         ('incompleted','Incompleted Action')
     ]
-    user = models.ForeignKey('Account_Details', on_delete=models.CASCADE, related_name='action_center')
+    user = models.ForeignKey('Account_holders', on_delete=models.CASCADE, related_name='action_center')
     username = models.CharField(max_length=255)
     name = models.CharField(max_length=255)
     email = models.EmailField()
     subject = models.CharField(max_length=255)
+    subject_code = models.CharField(max_length=50, default='None')
     content = models.TextField()
     status = models.CharField(max_length=20, choices=ACTION_STATUSES)
     description = models.CharField(max_length=250)
     action_status=models.BooleanField(default=False)
-    issue_date = models.DateTimeField(default=timezone.now)
-    expire_date = models.DateTimeField(default=timezone.now)
+    issue_date = models.DateTimeField(blank=True, null=True)
+    expire_date = models.DateTimeField(blank=True, null=True)
+
 
     def __str__(self):
         return self.subject
@@ -343,6 +345,13 @@ class LoginActivity(models.Model):
         on_delete=models.SET_NULL,
         related_name='login_activities'
     )
+    ACCOUNT_STATUS = [
+        ('block', 'Block'),
+        ('logout_forcely', 'Logout'),
+        ('unblock', 'Unblock'),
+        ('running', 'Running'),
+        ('active', 'Active')
+    ]
     username = models.CharField(max_length=150, blank=True)   # store attempted username as well
     ip_address = models.CharField(max_length=45)  # IPv6 safe
     device_type = models.CharField(max_length=50, blank=True)  # Mobile / Tablet / PC / Bot / Unknown
@@ -358,6 +367,7 @@ class LoginActivity(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     logout_time = models.DateTimeField(blank=True, null=True)
     is_active_session = models.BooleanField(default=True)
+    account_status = models.CharField(max_length=20, choices=ACCOUNT_STATUS, default='active')
 
     class Meta:
         ordering = ('-created_at',)

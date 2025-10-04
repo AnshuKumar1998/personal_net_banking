@@ -17,12 +17,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if (searchButton) {
         searchButton.addEventListener('click', function() {
             const accountInputEl = document.getElementById('accountInput');
-            if (!accountInputEl) return;
+            const errorEl = document.getElementById('accountInput_error');
+            if (!accountInputEl || !errorEl) return;
             const accountInput = accountInputEl.value.trim();
             dvloader('show');
 
             if (!accountInput) {
-                alert('Please enter an account number or UPI ID');
+                accountInputEl.classList.add("is-invalid");
+                errorEl.style.display = "block";
+                errorEl.style.color = "red";
+               // errorEl.textContent = "Please enter an account number or UPI ID";
                 dvloader('hide');
                 return;
             }
@@ -58,40 +62,75 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    const accountInputEl = document.getElementById('accountInput');
+    const errorEl = document.getElementById('accountInput_error');
+
+    if (accountInputEl && errorEl) {
+        accountInputEl.addEventListener('focus', function () {
+            accountInputEl.classList.remove("is-invalid");
+            errorEl.style.display = "none";
+            errorEl.textContent = "";
+        });
+    }
+
     // Transfer button logic
     if (transferButton) {
-        transferButton.addEventListener('click', function() {
-            const accountInputEl = document.getElementById('accountInput');
-            const amountEl = document.getElementById('transferAmount');
-            if (!accountInputEl || !amountEl) return;
+    transferButton.addEventListener('click', function() {
+        dvloader('show');
+        const accountInputEl = document.getElementById('accountInput');
+        const amountEl = document.getElementById('transferAmount');
+        const errorEl = document.getElementById('transferAmount_error');
 
-            const account = accountInputEl.value.trim();
-            const amount = parseFloat(amountEl.value) || 0;
+        if (!amountEl.value.trim()) {
+            amountEl.classList.add("is-invalid");
+            errorEl.style.display = "block";
+            errorEl.style.color = "red";
+            //errorEl.textContent = "Please enter amount";
+            dvloader('hide');
+            return;
+        }
 
-            dvloader('show');
+        if (!accountInputEl.value.trim()) {
+            accountInputEl.classList.add("is-invalid");
+            // similarly show error for account input if needed
+            dvloader('hide');
+            return;
+        }
 
-            fetch('/transfer_money/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}' // Only works if inline JS in Django template
-                },
-                body: JSON.stringify({ account, amount })
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.json();
-            })
-            .then(data => {
-                showModal('Transfer Result', `<p>${data.message}</p>`);
-            })
-            .catch(error => {
-                console.error('Error during fetch operation:', error);
-                showModal('Error', '<p>An error occurred while processing your request.</p>');
-            })
-            .finally(() => {
-                setTimeout(() => dvloader('hide'), 400);
-            });
+        const account = accountInputEl.value.trim();
+        const amount = parseFloat(amountEl.value.trim()) || 0;
+
+        fetch('/transfer_money/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ account, amount })
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            showModal('Transfer Result', `<p>${data.message}</p>`);
+        })
+        .catch(error => {
+            console.error('Error during fetch operation:', error);
+            showModal('Error', '<p>An error occurred while processing your request.</p>');
+        })
+        .finally(() => {
+            setTimeout(() => dvloader('hide'), 400);
+        });
+    });
+}
+const amountEl2 = document.getElementById('transferAmount');
+const errorEl2 = document.getElementById('transferAmount_error');
+     if (amountEl2 && errorEl2) {
+        amountEl2.addEventListener('focus', function () {
+            amountEl2.classList.remove("is-invalid");
+            errorEl2.style.display = "none";
+            errorEl2.textContent = "";
         });
     }
 

@@ -76,6 +76,16 @@ $(document).ready(function() {
                 $('#accountInput').val(selected.data('account-no'));
                 $('#userData').show();
                 $('#customerListModal').modal('hide');
+                 const accountInputEl = document.getElementById('accountInput');
+                const errorEl = document.getElementById('accountInput_error');
+
+                // Red border hatao
+                accountInputEl.classList.remove("is-invalid");
+                accountInputEl.style.border = ""; // agar inline red border tha to remove
+
+                // Error text hatao
+                errorEl.style.display = "none";
+                errorEl.textContent = "";
             });
 
             $('#customerListModal').on('hidden.bs.modal', function() {

@@ -183,6 +183,11 @@ urlpatterns = [
     path('google/callback/', views.google_login_callback, name='google_callback'),
     path('google-login-callback/', views.google_login_callback, name='google_login_callback'),
     path('force_logout/', views.force_logout, name='force_logout'),
+    path('action/do_later/<int:action_id>/', views.do_later_action, name='do_later_action'),
+    path('loginactivity/block/<ip_address>/', views.blockIpAddress, name='blockIpAddress'),
+    path("loginactivity/blocked/", views.blocked_list, name="blocked_list"),
+    path("loginactivity/unblock/<str:ip_address>/", views.unblock_ip, name="unblock_ip"),
+    path('export-transaction-statement/', views.export_transaction_statement, name='export_transaction_statement'),
 
 
 ]+ static(settings.MEDIA_URL,document_root = settings.MEDIA_ROOT)
