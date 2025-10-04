@@ -2,6 +2,8 @@ import base64
 import os
 import shutil
 import io
+
+from reportlab.platypus import Image
 import pandas as pd
 import uuid
 import json
@@ -2102,7 +2104,7 @@ def export_transaction_statement(request):
 
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=landscape(A4),
-                                leftMargin=30, rightMargin=30,
+                                leftMargin=20, rightMargin=30,
                                 topMargin=50, bottomMargin=50)
         from reportlab.lib.styles import ParagraphStyle
         elements = []
@@ -2116,14 +2118,43 @@ def export_transaction_statement(request):
                             spaceAfter=10, # neeche space
                         )
 
+        profile = Account_holders.objects.get(user=request.user)
+
+        try:
+            account_data = Account_Details.objects.get(username=profile.username)
+        except Account_Details.DoesNotExist:
+            account_data = None
+
         # ----------------------------
         # 1️⃣ Bank Header
         # ----------------------------
-        elements.append(Paragraph("🏦 MINI BANK", bold))
+
+        #img_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'mini_bank_logo.png')
+        #img = Image(img_path, width=20, height=20)
+        #elements.append(img)
+        elements.append(Paragraph("MINI BANK", bold))
         elements.append(Spacer(1, 10))
-        elements.append(Paragraph("Account Holder: Dummy", normal))
-        elements.append(Paragraph("Account Username: dummy", normal))
-        elements.append(Paragraph("Branch Code: MINI10023BANK", normal))
+
+        info_data = [
+            ['Account Name  :', f"{account_data.name or ''}"],
+            ['Account Number    :', account_data.account_no or ''],
+            ['Account Type  :', 'Saving'],
+            ['Available Balance   :', f"Rs. {account_data.current_amt or ''}"],
+            ['Branch    :', 'MINIBANK82911IN']
+           # ['Address', 'DNO: 6-2-16/2, VITTALAVARI STREET, MAIN ROAD, NIDADAVOLE, West Godavari, 534301']
+        ]
+
+        info_table = Table(info_data, colWidths=[150, 300], hAlign='LEFT')
+        info_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('FONTSIZE', (0, 0), (-1, -1), 11),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        elements.append(info_table)
         elements.append(Spacer(1, 20))
 
         # ----------------------------
@@ -2149,6 +2180,7 @@ def export_transaction_statement(request):
         # ----------------------------
         # 3️⃣ Create Table with Style
         # ----------------------------
+
         col_widths = [50, 100, 70, 70, 70, 60, 80, 60, 120]
         table = Table(table_data, colWidths=col_widths)
         table.setStyle(TableStyle([
